@@ -1,0 +1,41 @@
+[package]
+name = "noise_gui"
+version = "0.1.0"
+authors = ["John Wells <john@attackgoat.com>"]
+edition = "2021"
+
+[dependencies]
+crossbeam-channel = "0.5"
+eframe = { version = "0.24", default-features = false, features = [
+    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+    "default_fonts", # Embed the default egui fonts.
+    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "persistence",   # Enable restoring app state when restarting the app.
+] }
+egui = "0.24"
+egui-snarl = { git = "https://github.com/zakarumych/egui-snarl", features = ["serde"] }
+log = "0.4"
+noise = "0.8"
+
+# You only need serde if you want app persistence:
+serde = { version = "1", features = ["derive"] }
+
+# native:
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "0.10"
+
+# web:
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
+
+[build-dependencies]
+anyhow = "1.0"
+lazy_static = "1.4"
+rand = "0.8"
+
+[profile.release]
+opt-level = 2 # fast and small wasm
+
+# Optimize all dependencies even in debug builds:
+[profile.dev.package."*"]
+opt-level = 2
