@@ -1,7 +1,7 @@
 use {
     super::{
         expr::Expr,
-        node::{ImageMut, NoiseNode},
+        node::{Image, NoiseNode},
         rand::shuffled_u8,
         thread::{ImageInfo, Threads},
         view::Viewer,
@@ -12,6 +12,7 @@ use {
         ColorImage, Context, Id, Layout, TopBottomPanel, ViewportCommand,
     },
     egui_snarl::{ui::SnarlStyle, Snarl},
+    log::debug,
     std::{
         cell::RefCell,
         collections::{HashMap, HashSet},
@@ -94,7 +95,7 @@ impl App {
                 continue;
             }
 
-            if let Some(ImageMut {
+            if let Some(Image {
                 texture: Some(texture),
                 version,
                 ..
@@ -155,14 +156,16 @@ impl App {
             if let Some(image) = node.image_mut() {
                 // Ensure all image nodes contain a valid texture
                 if image.texture.is_none() {
-                    *image.texture = Some(ctx.load_texture(
+                    debug!("Creating image for #{node_idx}");
+
+                    image.texture = Some(ctx.load_texture(
                         format!("image{node_idx}"),
                         ColorImage::new(Self::IMAGE_SIZE, Color32::TRANSPARENT),
                         Default::default(),
                     ));
                 }
 
-                *image.version = self.version;
+                image.version = self.version;
             }
         }
 
@@ -178,6 +181,8 @@ impl App {
         for node_idx in self.updated_node_indices.drain() {
             let node = self.snarl.get_node(node_idx);
             if let Some(image) = node.image() {
+                debug!("Updating image for #{node_idx}");
+
                 self.node_exprs
                     .write()
                     .unwrap()
