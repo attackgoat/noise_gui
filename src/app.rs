@@ -6,7 +6,7 @@ use {
         thread::{ImageInfo, Threads},
         view::Viewer,
     },
-    eframe::{get_value, set_value, CreationContext, Frame, Storage, APP_KEY},
+    eframe::{set_value, CreationContext, Frame, Storage, APP_KEY},
     egui::{
         github_link_file, menu, warn_if_debug_build, widgets, Align, CentralPanel, Color32,
         ColorImage, Context, Id, Layout, TopBottomPanel, ViewportCommand,
@@ -19,6 +19,9 @@ use {
         sync::{Arc, RwLock},
     },
 };
+
+#[cfg(not(debug_assertions))]
+use eframe::get_value;
 
 pub type NodeExprs = Arc<RwLock<HashMap<usize, (usize, Arc<Expr>)>>>;
 
@@ -38,12 +41,17 @@ impl App {
         Threads::IMAGE_SIZE * Threads::IMAGE_COORDS as usize,
     ];
 
-    pub fn new(cc: &CreationContext<'_>) -> Self {
+    pub fn new(#[allow(unused_variables)] cc: &CreationContext<'_>) -> Self {
+        #[cfg(not(debug_assertions))]
         let snarl: Snarl<NoiseNode> = if let Some(storage) = cc.storage {
             get_value(storage, APP_KEY).unwrap_or_default()
         } else {
             Snarl::new()
         };
+
+        #[cfg(debug_assertions)]
+        let snarl: Snarl<NoiseNode> = Snarl::new();
+
         let node_exprs = Default::default();
         let threads = Threads::new(&node_exprs);
         let removed_node_indices = Default::default();
@@ -227,11 +235,6 @@ impl eframe::App for App {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        if self.has_changes() {
-            self.remove_nodes();
-            self.update_nodes(ctx);
-        }
-
         self.update_images();
 
         TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -279,5 +282,10 @@ impl eframe::App for App {
                 warn_if_debug_build(ui);
             });
         });
+
+        if self.has_changes() {
+            self.remove_nodes();
+            self.update_nodes(ctx);
+        }
     }
 }

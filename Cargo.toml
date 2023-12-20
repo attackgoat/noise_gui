@@ -16,6 +16,7 @@ egui = "0.24"
 egui-snarl = { git = "https://github.com/zakarumych/egui-snarl", features = ["serde"] }
 log = "0.4"
 noise = "0.8"
+ordered-float = "4.2"
 
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
