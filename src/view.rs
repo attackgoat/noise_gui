@@ -1,9 +1,10 @@
 use {
     super::node::{
-        ClampNode, CombinerNode, ConstantNode, ControlPointNode, CurveNode, ExponentNode,
-        FractalNode,
+        CheckerboardNode, ClampNode, CombinerNode, ControlPointNode, CurveNode, CylindersNode,
+        DistanceFunction, ExponentNode, FractalNode, GeneratorNode,
         NodeValue::{Node, Value},
-        NoiseNode, PerlinNode, RigidFractalNode, ScaleBiasNode, Source, TerraceNode, UnaryNode,
+        NoiseNode, ReturnType, RigidFractalNode, ScaleBiasNode, Source, TerraceNode, UnaryNode,
+        WorleyNode,
     },
     egui::{Color32, RichText},
     egui_snarl::{
@@ -20,6 +21,58 @@ pub struct Viewer<'a> {
 }
 
 impl<'a> Viewer<'a> {
+    // TODO: Make generic (see other combo box functions)
+    fn distance_fn_combo_box(
+        &mut self,
+        ui: &mut egui::Ui,
+        distance_fn: &mut DistanceFunction,
+        node_idx: usize,
+    ) {
+        egui::ComboBox::from_id_source(0)
+            .selected_text(format!("{distance_fn:?}"))
+            .show_ui(ui, |ui| {
+                ui.style_mut().wrap = Some(false);
+                ui.set_min_width(60.0);
+                for value in [
+                    DistanceFunction::Chebyshev,
+                    DistanceFunction::Euclidean,
+                    DistanceFunction::EuclideanSquared,
+                    DistanceFunction::Manhattan,
+                ] {
+                    if ui
+                        .selectable_value(distance_fn, value, format!("{value:?}"))
+                        .changed()
+                    {
+                        self.updated_node_indices.insert(node_idx);
+                    }
+                }
+            });
+    }
+
+    // TODO: Make generic (see other combo box functions)
+    fn return_ty_combo_box(
+        &mut self,
+        ui: &mut egui::Ui,
+        return_ty: &mut ReturnType,
+        node_idx: usize,
+    ) {
+        egui::ComboBox::from_id_source(1)
+            .selected_text(format!("{return_ty:?}"))
+            .show_ui(ui, |ui| {
+                ui.style_mut().wrap = Some(false);
+                ui.set_min_width(60.0);
+                for value in [ReturnType::Distance, ReturnType::Value] {
+                    if ui
+                        .selectable_value(return_ty, value, format!("{value:?}"))
+                        .changed()
+                    {
+                        self.updated_node_indices.insert(node_idx);
+                    }
+                }
+            });
+    }
+
+    // TODO: Make generic (see other combo box functions)
     fn source_combo_box(&mut self, ui: &mut egui::Ui, source: &mut Source, node_idx: usize) {
         egui::ComboBox::from_id_source(0)
             .selected_text(format!("{source:?}"))
@@ -78,9 +131,11 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 | NoiseNode::Add(_)
                 | NoiseNode::BasicMulti(_)
                 | NoiseNode::Billow(_)
+                | NoiseNode::Checkerboard(_)
                 | NoiseNode::Clamp(_)
                 | NoiseNode::ControlPoint(_)
                 | NoiseNode::Curve(_)
+                | NoiseNode::Cylinders(_)
                 | NoiseNode::Exponent(_)
                 | NoiseNode::F64(_)
                 | NoiseNode::Fbm(_)
@@ -89,11 +144,17 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 | NoiseNode::Min(_)
                 | NoiseNode::Multiply(_)
                 | NoiseNode::Negate(_)
+                | NoiseNode::OpenSimplex(_)
                 | NoiseNode::Perlin(_)
+                | NoiseNode::PerlinSurflet(_)
                 | NoiseNode::Power(_)
                 | NoiseNode::RigidMulti(_)
                 | NoiseNode::ScaleBias(_)
-                | NoiseNode::Terrace(_),
+                | NoiseNode::Simplex(_)
+                | NoiseNode::SuperSimplex(_)
+                | NoiseNode::Terrace(_)
+                | NoiseNode::Value(_)
+                | NoiseNode::Worley(_),
                 0,
                 NoiseNode::Abs(UnaryNode { input_node_idx, .. })
                 | NoiseNode::Clamp(ClampNode { input_node_idx, .. })
@@ -108,14 +169,22 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             (NoiseNode::F64(_), 0, NoiseNode::ControlPoint(node)) => {
                 node.input = Node(from.id.node);
             }
+            (NoiseNode::F64(_), 0, NoiseNode::Cylinders(node)) => {
+                node.frequency = Node(from.id.node);
+            }
+            (NoiseNode::U32(_), 0, NoiseNode::Checkerboard(node)) => {
+                node.size = Node(from.id.node);
+            }
             (
                 NoiseNode::Abs(_)
                 | NoiseNode::Add(_)
                 | NoiseNode::BasicMulti(_)
                 | NoiseNode::Billow(_)
+                | NoiseNode::Checkerboard(_)
                 | NoiseNode::Clamp(_)
                 | NoiseNode::ControlPoint(_)
                 | NoiseNode::Curve(_)
+                | NoiseNode::Cylinders(_)
                 | NoiseNode::Exponent(_)
                 | NoiseNode::F64(_)
                 | NoiseNode::Fbm(_)
@@ -124,11 +193,17 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 | NoiseNode::Min(_)
                 | NoiseNode::Multiply(_)
                 | NoiseNode::Negate(_)
+                | NoiseNode::OpenSimplex(_)
                 | NoiseNode::Perlin(_)
+                | NoiseNode::PerlinSurflet(_)
                 | NoiseNode::Power(_)
                 | NoiseNode::RigidMulti(_)
                 | NoiseNode::ScaleBias(_)
-                | NoiseNode::Terrace(_),
+                | NoiseNode::Simplex(_)
+                | NoiseNode::SuperSimplex(_)
+                | NoiseNode::Terrace(_)
+                | NoiseNode::Value(_)
+                | NoiseNode::Worley(_),
                 0 | 1,
                 NoiseNode::Add(node)
                 | NoiseNode::Min(node)
@@ -162,6 +237,9 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             (NoiseNode::F64(_), 1, NoiseNode::ScaleBias(node)) => {
                 node.scale = Node(from.id.node);
             }
+            (NoiseNode::F64(_), 1, NoiseNode::Worley(node)) => {
+                node.frequency = Node(from.id.node);
+            }
             (NoiseNode::F64(_), 2, NoiseNode::ScaleBias(node)) => {
                 node.bias = Node(from.id.node);
             }
@@ -171,9 +249,15 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 NoiseNode::BasicMulti(FractalNode { seed, .. })
                 | NoiseNode::Billow(FractalNode { seed, .. })
                 | NoiseNode::Fbm(FractalNode { seed, .. })
-                | NoiseNode::Perlin(PerlinNode { seed, .. })
                 | NoiseNode::HybridMulti(FractalNode { seed, .. })
-                | NoiseNode::RigidMulti(RigidFractalNode { seed, .. }),
+                | NoiseNode::OpenSimplex(GeneratorNode { seed, .. })
+                | NoiseNode::Perlin(GeneratorNode { seed, .. })
+                | NoiseNode::PerlinSurflet(GeneratorNode { seed, .. })
+                | NoiseNode::RigidMulti(RigidFractalNode { seed, .. })
+                | NoiseNode::Simplex(GeneratorNode { seed, .. })
+                | NoiseNode::SuperSimplex(GeneratorNode { seed, .. })
+                | NoiseNode::Value(GeneratorNode { seed, .. })
+                | NoiseNode::Worley(WorleyNode { seed, .. }),
             ) => {
                 *seed = Node(from.id.node);
             }
@@ -282,13 +366,16 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             NoiseNode::Add(_) => {
                 ui.label("Add");
             }
-            NoiseNode::BasicMulti(FractalNode { source, .. }) => {
+            NoiseNode::BasicMulti(node) => {
                 ui.label("Basic Multi");
-                self.source_combo_box(ui, source, node_idx);
+                self.source_combo_box(ui, &mut node.source, node_idx);
             }
-            NoiseNode::Billow(FractalNode { source, .. }) => {
+            NoiseNode::Billow(node) => {
                 ui.label("Billow");
-                self.source_combo_box(ui, source, node_idx);
+                self.source_combo_box(ui, &mut node.source, node_idx);
+            }
+            NoiseNode::Checkerboard(_) => {
+                ui.label("Checkerboard");
             }
             NoiseNode::Clamp(_) => {
                 ui.label("Clamp");
@@ -303,20 +390,23 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     node.control_point_node_indices.pop();
                 }
             }
+            NoiseNode::Cylinders(_) => {
+                ui.label("Cylinders");
+            }
             NoiseNode::Exponent(_) => {
                 ui.label("Exponent");
             }
-            NoiseNode::F64(ConstantNode { name, value, .. }) => {
-                ui.add(egui::TextEdit::singleline(name).desired_width(50.0));
-                self.drag_value_f64(ui, value, node_idx);
+            NoiseNode::F64(node) => {
+                ui.add(egui::TextEdit::singleline(&mut node.name).desired_width(50.0));
+                self.drag_value_f64(ui, &mut node.value, node_idx);
             }
-            NoiseNode::Fbm(FractalNode { source, .. }) => {
+            NoiseNode::Fbm(node) => {
                 ui.label("fBm");
-                self.source_combo_box(ui, source, node_idx);
+                self.source_combo_box(ui, &mut node.source, node_idx);
             }
-            NoiseNode::HybridMulti(FractalNode { source, .. }) => {
+            NoiseNode::HybridMulti(node) => {
                 ui.label("Hybrid Multi");
-                self.source_combo_box(ui, source, node_idx);
+                self.source_combo_box(ui, &mut node.source, node_idx);
             }
             NoiseNode::Min(_) => {
                 ui.label("Min");
@@ -330,8 +420,14 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             NoiseNode::Negate(_) => {
                 ui.label("Negate");
             }
+            NoiseNode::OpenSimplex(_) => {
+                ui.label("Open Simplex");
+            }
             NoiseNode::Perlin(_) => {
                 ui.label("Perlin");
+            }
+            NoiseNode::PerlinSurflet(_) => {
+                ui.label("Perlin Surflet");
             }
             NoiseNode::Power(_) => {
                 ui.label("Power");
@@ -343,6 +439,12 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             NoiseNode::ScaleBias(_) => {
                 ui.label("Scale + Bias");
             }
+            NoiseNode::Simplex(_) => {
+                ui.label("Simplex");
+            }
+            NoiseNode::SuperSimplex(_) => {
+                ui.label("Super Simplex");
+            }
             NoiseNode::Terrace(node) => {
                 ui.label("Terrace");
                 if ui.checkbox(&mut node.inverted, "Inverted").changed() {
@@ -353,9 +455,17 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     node.control_point_node_indices.pop();
                 }
             }
-            NoiseNode::U32(ConstantNode { name, value, .. }) => {
-                ui.add(egui::TextEdit::singleline(name).desired_width(50.0));
-                self.drag_value_u32(ui, value, node_idx);
+            NoiseNode::U32(node) => {
+                ui.add(egui::TextEdit::singleline(&mut node.name).desired_width(50.0));
+                self.drag_value_u32(ui, &mut node.value, node_idx);
+            }
+            NoiseNode::Value(_) => {
+                ui.label("Value");
+            }
+            NoiseNode::Worley(node) => {
+                ui.label("Worley");
+                self.distance_fn_combo_box(ui, &mut node.distance_fn, node_idx);
+                self.return_ty_combo_box(ui, &mut node.return_ty, node_idx);
             }
         }
 
@@ -372,14 +482,24 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
     fn inputs(&mut self, node: &NoiseNode) -> usize {
         match node {
             NoiseNode::F64(_) | NoiseNode::U32(_) => 0,
-            NoiseNode::Abs(_) | NoiseNode::Negate(_) | NoiseNode::Perlin(_) => 1,
+            NoiseNode::Abs(_)
+            | NoiseNode::Checkerboard(_)
+            | NoiseNode::Cylinders(_)
+            | NoiseNode::OpenSimplex(_)
+            | NoiseNode::Perlin(_)
+            | NoiseNode::PerlinSurflet(_)
+            | NoiseNode::Negate(_)
+            | NoiseNode::Simplex(_)
+            | NoiseNode::SuperSimplex(_)
+            | NoiseNode::Value(_) => 1,
             NoiseNode::Add(_)
             | NoiseNode::ControlPoint(_)
             | NoiseNode::Exponent(_)
             | NoiseNode::Min(_)
             | NoiseNode::Max(_)
             | NoiseNode::Multiply(_)
-            | NoiseNode::Power(_) => 2,
+            | NoiseNode::Power(_)
+            | NoiseNode::Worley(_) => 2,
             NoiseNode::Clamp(_) | NoiseNode::ScaleBias(_) => 3,
             NoiseNode::BasicMulti(_)
             | NoiseNode::Billow(_)
@@ -462,6 +582,20 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 }
                 (
                     0,
+                    &NoiseNode::Checkerboard(CheckerboardNode {
+                        size: Node(node_idx),
+                        ..
+                    }),
+                ) => {
+                    snarl
+                        .get_node_mut(pin.id.node)
+                        .as_checkerboard_mut()
+                        .unwrap()
+                        .size = Value(snarl.get_node(node_idx).as_const_u32().unwrap());
+                    self.updated_node_indices.insert(pin.id.node);
+                }
+                (
+                    0,
                     &NoiseNode::Clamp(ClampNode {
                         input_node_idx: Some(_),
                         ..
@@ -504,6 +638,20 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 }
                 (
                     0,
+                    &NoiseNode::Cylinders(CylindersNode {
+                        frequency: Node(node_idx),
+                        ..
+                    }),
+                ) => {
+                    snarl
+                        .get_node_mut(pin.id.node)
+                        .as_cylinders_mut()
+                        .unwrap()
+                        .frequency = Value(snarl.get_node(node_idx).as_const_f64().unwrap());
+                    self.updated_node_indices.insert(pin.id.node);
+                }
+                (
+                    0,
                     &NoiseNode::Exponent(ExponentNode {
                         input_node_idx: Some(_),
                         ..
@@ -518,14 +666,34 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 }
                 (
                     0,
-                    &NoiseNode::Perlin(PerlinNode {
+                    &NoiseNode::OpenSimplex(GeneratorNode {
+                        seed: Node(node_idx),
+                        ..
+                    })
+                    | &NoiseNode::Perlin(GeneratorNode {
+                        seed: Node(node_idx),
+                        ..
+                    })
+                    | &NoiseNode::PerlinSurflet(GeneratorNode {
+                        seed: Node(node_idx),
+                        ..
+                    })
+                    | &NoiseNode::Simplex(GeneratorNode {
+                        seed: Node(node_idx),
+                        ..
+                    })
+                    | &NoiseNode::SuperSimplex(GeneratorNode {
+                        seed: Node(node_idx),
+                        ..
+                    })
+                    | &NoiseNode::Value(GeneratorNode {
                         seed: Node(node_idx),
                         ..
                     }),
                 ) => {
                     snarl
                         .get_node_mut(pin.id.node)
-                        .as_perlin_mut()
+                        .as_generator_mut()
                         .unwrap()
                         .seed = Value(snarl.get_node(node_idx).as_const_u32().unwrap());
                     self.updated_node_indices.insert(pin.id.node);
@@ -556,6 +724,20 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         .as_scale_bias_mut()
                         .unwrap()
                         .input_node_idx = None;
+                    self.updated_node_indices.insert(pin.id.node);
+                }
+                (
+                    0,
+                    &NoiseNode::Worley(WorleyNode {
+                        seed: Node(node_idx),
+                        ..
+                    }),
+                ) => {
+                    snarl
+                        .get_node_mut(pin.id.node)
+                        .as_worley_mut()
+                        .unwrap()
+                        .seed = Value(snarl.get_node(node_idx).as_const_u32().unwrap());
                     self.updated_node_indices.insert(pin.id.node);
                 }
                 (
@@ -677,6 +859,20 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         .as_scale_bias_mut()
                         .unwrap()
                         .scale = Value(snarl.get_node(node_idx).as_const_f64().unwrap());
+                    self.updated_node_indices.insert(pin.id.node);
+                }
+                (
+                    1,
+                    &NoiseNode::Worley(WorleyNode {
+                        frequency: Node(node_idx),
+                        ..
+                    }),
+                ) => {
+                    snarl
+                        .get_node_mut(pin.id.node)
+                        .as_worley_mut()
+                        .unwrap()
+                        .frequency = Value(snarl.get_node(node_idx).as_const_f64().unwrap());
                     self.updated_node_indices.insert(pin.id.node);
                 }
                 (
@@ -911,8 +1107,14 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 | NoiseNode::Billow(FractalNode { seed, .. })
                 | NoiseNode::Fbm(FractalNode { seed, .. })
                 | NoiseNode::HybridMulti(FractalNode { seed, .. })
-                | NoiseNode::Perlin(PerlinNode { seed, .. })
-                | NoiseNode::RigidMulti(RigidFractalNode { seed, .. }),
+                | NoiseNode::OpenSimplex(GeneratorNode { seed, .. })
+                | NoiseNode::Perlin(GeneratorNode { seed, .. })
+                | NoiseNode::PerlinSurflet(GeneratorNode { seed, .. })
+                | NoiseNode::RigidMulti(RigidFractalNode { seed, .. })
+                | NoiseNode::Simplex(GeneratorNode { seed, .. })
+                | NoiseNode::SuperSimplex(GeneratorNode { seed, .. })
+                | NoiseNode::Value(GeneratorNode { seed, .. })
+                | NoiseNode::Worley(WorleyNode { seed, .. }),
             ) => {
                 ui.label("Seed");
 
@@ -930,6 +1132,23 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     PinInfo::circle().with_fill(egui::Color32::GREEN)
                 }
             }
+            (0, NoiseNode::Checkerboard(CheckerboardNode { size, .. })) => {
+                ui.label("Size");
+
+                if let Some(value) = size.as_value_mut() {
+                    self.drag_value_u32(ui, value, pin.id.node);
+
+                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                } else {
+                    #[cfg(debug_assertions)]
+                    ui.label(
+                        RichText::new(format!("#{:?}", size.as_node_index().unwrap()))
+                            .color(Color32::DEBUG_COLOR),
+                    );
+
+                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                }
+            }
             (0, NoiseNode::ControlPoint(node)) => {
                 ui.label("Input");
 
@@ -941,6 +1160,23 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     #[cfg(debug_assertions)]
                     ui.label(
                         RichText::new(format!("#{:?}", node.input.as_node_index().unwrap()))
+                            .color(Color32::DEBUG_COLOR),
+                    );
+
+                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                }
+            }
+            (0, NoiseNode::Cylinders(node)) => {
+                ui.label("Frequency");
+
+                if let Some(value) = node.frequency.as_value_mut() {
+                    self.drag_value_f64(ui, value, pin.id.node);
+
+                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                } else {
+                    #[cfg(debug_assertions)]
+                    ui.label(
+                        RichText::new(format!("#{:?}", node.frequency.as_node_index().unwrap()))
                             .color(Color32::DEBUG_COLOR),
                     );
 
@@ -1060,6 +1296,23 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     #[cfg(debug_assertions)]
                     ui.label(
                         RichText::new(format!("#{:?}", node.scale.as_node_index().unwrap()))
+                            .color(Color32::DEBUG_COLOR),
+                    );
+
+                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                }
+            }
+            (1, NoiseNode::Worley(node)) => {
+                ui.label("Frequency");
+
+                if let Some(value) = node.frequency.as_value_mut() {
+                    self.drag_value_f64(ui, value, pin.id.node);
+
+                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                } else {
+                    #[cfg(debug_assertions)]
+                    ui.label(
+                        RichText::new(format!("#{:?}", node.frequency.as_node_index().unwrap()))
                             .color(Color32::DEBUG_COLOR),
                     );
 
@@ -1293,8 +1546,10 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             | NoiseNode::Add(_)
             | NoiseNode::BasicMulti(_)
             | NoiseNode::Billow(_)
+            | NoiseNode::Checkerboard(_)
             | NoiseNode::Clamp(_)
             | NoiseNode::Curve(_)
+            | NoiseNode::Cylinders(_)
             | NoiseNode::Exponent(_)
             | NoiseNode::Fbm(_)
             | NoiseNode::HybridMulti(_)
@@ -1302,11 +1557,17 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             | NoiseNode::Max(_)
             | NoiseNode::Multiply(_)
             | NoiseNode::Negate(_)
+            | NoiseNode::OpenSimplex(_)
             | NoiseNode::Perlin(_)
+            | NoiseNode::PerlinSurflet(_)
             | NoiseNode::Power(_)
             | NoiseNode::RigidMulti(_)
             | NoiseNode::ScaleBias(_)
-            | NoiseNode::Terrace(_) => PinInfo::square().with_fill(egui::Color32::GOLD),
+            | NoiseNode::Simplex(_)
+            | NoiseNode::SuperSimplex(_)
+            | NoiseNode::Terrace(_)
+            | NoiseNode::Value(_)
+            | NoiseNode::Worley(_) => PinInfo::square().with_fill(egui::Color32::GOLD),
             NoiseNode::ControlPoint(_) => PinInfo::square().with_fill(egui::Color32::GOLD),
             NoiseNode::F64(_) => {
                 ui.label("f64");
@@ -1382,9 +1643,57 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         ui.separator();
         ui.label("Generators");
 
+        if ui.button("Checkerboard").clicked() {
+            self.updated_node_indices
+                .insert(snarl.insert_node(pos, NoiseNode::Checkerboard(Default::default())));
+            ui.close_menu();
+        }
+
+        if ui.button("Cylinders").clicked() {
+            self.updated_node_indices
+                .insert(snarl.insert_node(pos, NoiseNode::Cylinders(Default::default())));
+            ui.close_menu();
+        }
+
+        if ui.button("Open Simplex").clicked() {
+            self.updated_node_indices
+                .insert(snarl.insert_node(pos, NoiseNode::OpenSimplex(Default::default())));
+            ui.close_menu();
+        }
+
         if ui.button("Perlin").clicked() {
             self.updated_node_indices
                 .insert(snarl.insert_node(pos, NoiseNode::Perlin(Default::default())));
+            ui.close_menu();
+        }
+
+        if ui.button("Perlin Surflet").clicked() {
+            self.updated_node_indices
+                .insert(snarl.insert_node(pos, NoiseNode::PerlinSurflet(Default::default())));
+            ui.close_menu();
+        }
+
+        if ui.button("Simplex").clicked() {
+            self.updated_node_indices
+                .insert(snarl.insert_node(pos, NoiseNode::Simplex(Default::default())));
+            ui.close_menu();
+        }
+
+        if ui.button("Super Simplex").clicked() {
+            self.updated_node_indices
+                .insert(snarl.insert_node(pos, NoiseNode::SuperSimplex(Default::default())));
+            ui.close_menu();
+        }
+
+        if ui.button("Value").clicked() {
+            self.updated_node_indices
+                .insert(snarl.insert_node(pos, NoiseNode::Value(Default::default())));
+            ui.close_menu();
+        }
+
+        if ui.button("Worley").clicked() {
+            self.updated_node_indices
+                .insert(snarl.insert_node(pos, NoiseNode::Worley(Default::default())));
             ui.close_menu();
         }
 
@@ -1528,6 +1837,13 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .unwrap()
                             .seed = Value(snarl.get_node(node_idx).as_const_u32().unwrap());
                     }
+                    (0, NoiseNode::Checkerboard(_)) => {
+                        snarl
+                            .get_node_mut(remote.node)
+                            .as_checkerboard_mut()
+                            .unwrap()
+                            .size = Value(snarl.get_node(node_idx).as_const_u32().unwrap());
+                    }
                     (0, NoiseNode::Clamp(_)) => {
                         snarl
                             .get_node_mut(remote.node)
@@ -1549,6 +1865,13 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .unwrap()
                             .input_node_idx = None;
                     }
+                    (0, NoiseNode::Cylinders(_)) => {
+                        snarl
+                            .get_node_mut(remote.node)
+                            .as_cylinders_mut()
+                            .unwrap()
+                            .frequency = Value(snarl.get_node(node_idx).as_const_f64().unwrap());
+                    }
                     (0, NoiseNode::Exponent(_)) => {
                         snarl
                             .get_node_mut(remote.node)
@@ -1556,10 +1879,18 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .unwrap()
                             .input_node_idx = None;
                     }
-                    (0, NoiseNode::Perlin(_)) => {
+                    (
+                        0,
+                        NoiseNode::OpenSimplex(_)
+                        | NoiseNode::Perlin(_)
+                        | NoiseNode::PerlinSurflet(_)
+                        | NoiseNode::Simplex(_)
+                        | NoiseNode::SuperSimplex(_)
+                        | NoiseNode::Value(_),
+                    ) => {
                         snarl
                             .get_node_mut(remote.node)
-                            .as_perlin_mut()
+                            .as_generator_mut()
                             .unwrap()
                             .seed = Value(snarl.get_node(node_idx).as_const_u32().unwrap());
                     }
@@ -1583,6 +1914,13 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .as_terrace_mut()
                             .unwrap()
                             .input_node_idx = None;
+                    }
+                    (0, NoiseNode::Worley(_)) => {
+                        snarl
+                            .get_node_mut(remote.node)
+                            .as_worley_mut()
+                            .unwrap()
+                            .seed = Value(snarl.get_node(node_idx).as_const_u32().unwrap());
                     }
                     (
                         0 | 1,
@@ -1645,6 +1983,13 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .as_scale_bias_mut()
                             .unwrap()
                             .scale = Value(snarl.get_node(node_idx).as_const_f64().unwrap());
+                    }
+                    (1, NoiseNode::Worley(_)) => {
+                        snarl
+                            .get_node_mut(remote.node)
+                            .as_worley_mut()
+                            .unwrap()
+                            .frequency = Value(snarl.get_node(node_idx).as_const_f64().unwrap());
                     }
                     (
                         2,

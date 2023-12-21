@@ -1,14 +1,36 @@
 use {
     super::expr::{
         ClampExpr, ControlPointExpr, CurveExpr, ExponentExpr, Expr, FractalExpr, RigidFractalExpr,
-        ScaleBiasExpr, TerraceExpr,
+        ScaleBiasExpr, TerraceExpr, WorleyExpr,
     },
     egui::TextureHandle,
     egui_snarl::Snarl,
-    noise::{BasicMulti as Fractal, Perlin as AnySeedable, RidgedMulti as RigidFractal},
+    noise::{
+        BasicMulti as Fractal, Cylinders, Perlin as AnySeedable, RidgedMulti as RigidFractal,
+        Worley,
+    },
     serde::{Deserialize, Serialize},
     std::collections::HashSet,
 };
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct CheckerboardNode {
+    pub image: Image,
+
+    pub output_node_indices: HashSet<usize>,
+
+    pub size: NodeValue<u32>,
+}
+
+impl Default for CheckerboardNode {
+    fn default() -> Self {
+        Self {
+            image: Default::default(),
+            output_node_indices: Default::default(),
+            size: NodeValue::Value(0), // TODO: Checkerboard::DEFAULT_SIZE is private!
+        }
+    }
+}
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ClampNode {
@@ -70,6 +92,33 @@ pub struct CurveNode {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+pub struct CylindersNode {
+    pub image: Image,
+
+    pub output_node_indices: HashSet<usize>,
+
+    pub frequency: NodeValue<f64>,
+}
+
+impl Default for CylindersNode {
+    fn default() -> Self {
+        Self {
+            image: Default::default(),
+            output_node_indices: Default::default(),
+            frequency: NodeValue::Value(Cylinders::DEFAULT_FREQUENCY),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum DistanceFunction {
+    Chebyshev,
+    Euclidean,
+    EuclideanSquared,
+    Manhattan,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ExponentNode {
     pub image: Image,
 
@@ -121,6 +170,15 @@ impl Default for FractalNode {
             persistence: NodeValue::Value(Fractal::<AnySeedable>::DEFAULT_PERSISTENCE),
         }
     }
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct GeneratorNode {
+    pub image: Image,
+
+    pub output_node_indices: HashSet<usize>,
+
+    pub seed: NodeValue<u32>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -215,8 +273,10 @@ pub enum NoiseNode {
     BasicMulti(FractalNode),
     Billow(FractalNode),
     Clamp(ClampNode),
+    Checkerboard(CheckerboardNode),
     ControlPoint(ControlPointNode),
     Curve(CurveNode),
+    Cylinders(CylindersNode),
     Exponent(ExponentNode),
     F64(ConstantNode<f64>),
     Fbm(FractalNode),
@@ -225,15 +285,29 @@ pub enum NoiseNode {
     Min(CombinerNode),
     Multiply(CombinerNode),
     Negate(UnaryNode),
-    Perlin(PerlinNode),
+    OpenSimplex(GeneratorNode),
+    Perlin(GeneratorNode),
+    PerlinSurflet(GeneratorNode),
     Power(CombinerNode),
     RigidMulti(RigidFractalNode),
     ScaleBias(ScaleBiasNode),
+    Simplex(GeneratorNode),
+    SuperSimplex(GeneratorNode),
     Terrace(TerraceNode),
     U32(ConstantNode<u32>),
+    Value(GeneratorNode),
+    Worley(WorleyNode),
 }
 
 impl NoiseNode {
+    pub fn as_checkerboard_mut(&mut self) -> Option<&mut CheckerboardNode> {
+        if let Self::Checkerboard(node) = self {
+            Some(node)
+        } else {
+            None
+        }
+    }
+
     pub fn as_clamp_mut(&mut self) -> Option<&mut ClampNode> {
         if let Self::Clamp(node) = self {
             Some(node)
@@ -295,6 +369,14 @@ impl NoiseNode {
         }
     }
 
+    pub fn as_cylinders_mut(&mut self) -> Option<&mut CylindersNode> {
+        if let Self::Cylinders(node) = self {
+            Some(node)
+        } else {
+            None
+        }
+    }
+
     pub fn as_exponent_mut(&mut self) -> Option<&mut ExponentNode> {
         if let Self::Exponent(node) = self {
             Some(node)
@@ -315,8 +397,14 @@ impl NoiseNode {
         }
     }
 
-    pub fn as_perlin_mut(&mut self) -> Option<&mut PerlinNode> {
-        if let Self::Perlin(node) = self {
+    pub fn as_generator_mut(&mut self) -> Option<&mut GeneratorNode> {
+        if let Self::OpenSimplex(node)
+        | Self::Perlin(node)
+        | Self::PerlinSurflet(node)
+        | Self::Simplex(node)
+        | Self::SuperSimplex(node)
+        | Self::Value(node) = self
+        {
             Some(node)
         } else {
             None
@@ -349,6 +437,14 @@ impl NoiseNode {
 
     pub fn as_unary_mut(&mut self) -> Option<&mut UnaryNode> {
         if let Self::Abs(node) | Self::Negate(node) = self {
+            Some(node)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_worley_mut(&mut self) -> Option<&mut WorleyNode> {
+        if let Self::Worley(node) = self {
             Some(node)
         } else {
             None
@@ -390,6 +486,7 @@ impl NoiseNode {
                 lacunarity: node.lacunarity.value(snarl),
                 persistence: node.persistence.value(snarl),
             }),
+            Self::Checkerboard(node) => Expr::Checkerboard(node.size.value(snarl)),
             Self::Clamp(node) => Expr::Clamp(ClampExpr {
                 source: node
                     .input_node_idx
@@ -421,6 +518,7 @@ impl NoiseNode {
                     })
                     .collect(),
             }),
+            Self::Cylinders(node) => Expr::Cylinders(node.frequency.value(snarl)),
             Self::Exponent(node) => Expr::Exponent(ExponentExpr {
                 source: node
                     .input_node_idx
@@ -486,6 +584,9 @@ impl NoiseNode {
                     .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
                     .unwrap_or_else(|| Box::new(Expr::F64(0.0))),
             ),
+            Self::OpenSimplex(node) => Expr::OpenSimplex(node.seed.value(snarl)),
+            Self::Perlin(node) => Expr::Perlin(node.seed.value(snarl)),
+            Self::PerlinSurflet(node) => Expr::PerlinSurflet(node.seed.value(snarl)),
             Self::Power(node) => Expr::Power(
                 node.input_node_indices
                     .iter()
@@ -498,7 +599,6 @@ impl NoiseNode {
                     .try_into()
                     .unwrap(),
             ),
-            Self::Perlin(node) => Expr::Perlin(node.seed.value(snarl)),
             Self::RigidMulti(node) => Expr::RidgedMulti(RigidFractalExpr {
                 source: node.source,
                 seed: node.seed.value(snarl),
@@ -516,6 +616,8 @@ impl NoiseNode {
                 scale: node.scale.value(snarl),
                 bias: node.bias.value(snarl),
             }),
+            Self::Simplex(node) => Expr::Simplex(node.seed.value(snarl)),
+            Self::SuperSimplex(node) => Expr::SuperSimplex(node.seed.value(snarl)),
             Self::Terrace(node) => Expr::Terrace(TerraceExpr {
                 source: node
                     .input_node_idx
@@ -531,6 +633,13 @@ impl NoiseNode {
                     })
                     .collect(),
             }),
+            Self::Value(node) => Expr::Value(node.seed.value(snarl)),
+            Self::Worley(node) => Expr::Worley(WorleyExpr {
+                seed: node.seed.value(snarl),
+                frequency: node.frequency.value(snarl),
+                distance_fn: node.distance_fn,
+                return_ty: node.return_ty,
+            }),
             Self::ControlPoint(_) | Self::U32(_) => unreachable!(),
         }
     }
@@ -545,8 +654,10 @@ impl NoiseNode {
             | Self::Add(CombinerNode { image, .. })
             | Self::BasicMulti(FractalNode { image, .. })
             | Self::Billow(FractalNode { image, .. })
+            | Self::Checkerboard(CheckerboardNode { image, .. })
             | Self::Clamp(ClampNode { image, .. })
             | Self::Curve(CurveNode { image, .. })
+            | Self::Cylinders(CylindersNode { image, .. })
             | Self::Exponent(ExponentNode { image, .. })
             | Self::Fbm(FractalNode { image, .. })
             | Self::HybridMulti(FractalNode { image, .. })
@@ -554,11 +665,17 @@ impl NoiseNode {
             | Self::Min(CombinerNode { image, .. })
             | Self::Multiply(CombinerNode { image, .. })
             | Self::Negate(UnaryNode { image, .. })
-            | Self::Perlin(PerlinNode { image, .. })
+            | Self::OpenSimplex(GeneratorNode { image, .. })
+            | Self::Perlin(GeneratorNode { image, .. })
+            | Self::PerlinSurflet(GeneratorNode { image, .. })
             | Self::Power(CombinerNode { image, .. })
             | Self::RigidMulti(RigidFractalNode { image, .. })
             | Self::ScaleBias(ScaleBiasNode { image, .. })
-            | Self::Terrace(TerraceNode { image, .. }) => Some(image),
+            | Self::Simplex(GeneratorNode { image, .. })
+            | Self::SuperSimplex(GeneratorNode { image, .. })
+            | Self::Terrace(TerraceNode { image, .. })
+            | Self::Value(GeneratorNode { image, .. })
+            | Self::Worley(WorleyNode { image, .. }) => Some(image),
             Self::ControlPoint(_) | Self::F64(_) | Self::U32(_) => None,
         }
     }
@@ -569,8 +686,10 @@ impl NoiseNode {
             | Self::Add(CombinerNode { image, .. })
             | Self::BasicMulti(FractalNode { image, .. })
             | Self::Billow(FractalNode { image, .. })
+            | Self::Checkerboard(CheckerboardNode { image, .. })
             | Self::Clamp(ClampNode { image, .. })
             | Self::Curve(CurveNode { image, .. })
+            | Self::Cylinders(CylindersNode { image, .. })
             | Self::Exponent(ExponentNode { image, .. })
             | Self::Fbm(FractalNode { image, .. })
             | Self::HybridMulti(FractalNode { image, .. })
@@ -578,11 +697,17 @@ impl NoiseNode {
             | Self::Min(CombinerNode { image, .. })
             | Self::Multiply(CombinerNode { image, .. })
             | Self::Negate(UnaryNode { image, .. })
-            | Self::Perlin(PerlinNode { image, .. })
+            | Self::OpenSimplex(GeneratorNode { image, .. })
+            | Self::Perlin(GeneratorNode { image, .. })
+            | Self::PerlinSurflet(GeneratorNode { image, .. })
             | Self::Power(CombinerNode { image, .. })
             | Self::RigidMulti(RigidFractalNode { image, .. })
             | Self::ScaleBias(ScaleBiasNode { image, .. })
-            | Self::Terrace(TerraceNode { image, .. }) => Some(image),
+            | Self::Simplex(GeneratorNode { image, .. })
+            | Self::SuperSimplex(GeneratorNode { image, .. })
+            | Self::Terrace(TerraceNode { image, .. })
+            | Self::Value(GeneratorNode { image, .. })
+            | Self::Worley(WorleyNode { image, .. }) => Some(image),
             Self::ControlPoint(_) | Self::F64(_) | Self::U32(_) => None,
         }
     }
@@ -597,6 +722,10 @@ impl NoiseNode {
                 output_node_indices,
                 ..
             })
+            | Self::Checkerboard(CheckerboardNode {
+                output_node_indices,
+                ..
+            })
             | Self::Clamp(ClampNode {
                 output_node_indices,
                 ..
@@ -606,6 +735,10 @@ impl NoiseNode {
                 ..
             })
             | Self::Curve(CurveNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Cylinders(CylindersNode {
                 output_node_indices,
                 ..
             })
@@ -649,7 +782,15 @@ impl NoiseNode {
                 output_node_indices,
                 ..
             })
-            | Self::Perlin(PerlinNode {
+            | Self::OpenSimplex(GeneratorNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Perlin(GeneratorNode {
+                output_node_indices,
+                ..
+            })
+            | Self::PerlinSurflet(GeneratorNode {
                 output_node_indices,
                 ..
             })
@@ -665,11 +806,27 @@ impl NoiseNode {
                 output_node_indices,
                 ..
             })
+            | Self::Simplex(GeneratorNode {
+                output_node_indices,
+                ..
+            })
+            | Self::SuperSimplex(GeneratorNode {
+                output_node_indices,
+                ..
+            })
             | Self::Terrace(TerraceNode {
                 output_node_indices,
                 ..
             })
             | Self::U32(ConstantNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Value(GeneratorNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Worley(WorleyNode {
                 output_node_indices,
                 ..
             }) => output_node_indices,
@@ -686,6 +843,10 @@ impl NoiseNode {
                 output_node_indices,
                 ..
             })
+            | Self::Checkerboard(CheckerboardNode {
+                output_node_indices,
+                ..
+            })
             | Self::Clamp(ClampNode {
                 output_node_indices,
                 ..
@@ -695,6 +856,10 @@ impl NoiseNode {
                 ..
             })
             | Self::Curve(CurveNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Cylinders(CylindersNode {
                 output_node_indices,
                 ..
             })
@@ -738,7 +903,15 @@ impl NoiseNode {
                 output_node_indices,
                 ..
             })
-            | Self::Perlin(PerlinNode {
+            | Self::OpenSimplex(GeneratorNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Perlin(GeneratorNode {
+                output_node_indices,
+                ..
+            })
+            | Self::PerlinSurflet(GeneratorNode {
                 output_node_indices,
                 ..
             })
@@ -754,6 +927,14 @@ impl NoiseNode {
                 output_node_indices,
                 ..
             })
+            | Self::Simplex(GeneratorNode {
+                output_node_indices,
+                ..
+            })
+            | Self::SuperSimplex(GeneratorNode {
+                output_node_indices,
+                ..
+            })
             | Self::Terrace(TerraceNode {
                 output_node_indices,
                 ..
@@ -761,18 +942,23 @@ impl NoiseNode {
             | Self::U32(ConstantNode {
                 output_node_indices,
                 ..
+            })
+            | Self::Value(GeneratorNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Worley(WorleyNode {
+                output_node_indices,
+                ..
             }) => output_node_indices,
         }
     }
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
-pub struct PerlinNode {
-    pub image: Image,
-
-    pub output_node_indices: HashSet<usize>,
-
-    pub seed: NodeValue<u32>,
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ReturnType {
+    Distance,
+    Value,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -851,4 +1037,29 @@ pub struct UnaryNode {
 
     pub input_node_idx: Option<usize>,
     pub output_node_indices: HashSet<usize>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct WorleyNode {
+    pub image: Image,
+
+    pub output_node_indices: HashSet<usize>,
+
+    pub seed: NodeValue<u32>,
+    pub frequency: NodeValue<f64>,
+    pub distance_fn: DistanceFunction,
+    pub return_ty: ReturnType,
+}
+
+impl Default for WorleyNode {
+    fn default() -> Self {
+        Self {
+            image: Default::default(),
+            output_node_indices: Default::default(),
+            seed: NodeValue::Value(Worley::DEFAULT_SEED),
+            frequency: NodeValue::Value(Worley::DEFAULT_FREQUENCY),
+            distance_fn: DistanceFunction::Euclidean,
+            return_ty: ReturnType::Value,
+        }
+    }
 }

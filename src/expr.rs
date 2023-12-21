@@ -1,9 +1,14 @@
 use {
-    super::node::{FractalNode, Source},
+    super::node::{DistanceFunction, FractalNode, ReturnType, Source},
     noise::{
-        Abs, Add, BasicMulti, Billow, Clamp, Constant, Curve, Exponent, Fbm, HybridMulti, Max, Min,
-        MultiFractal, Multiply, Negate, NoiseFn, OpenSimplex, Perlin, PerlinSurflet, Power,
-        RidgedMulti, ScaleBias, Seedable, Simplex, Terrace, Value, Worley,
+        core::worley::{
+            self,
+            distance_functions::{chebyshev, euclidean, euclidean_squared, manhattan},
+        },
+        Abs, Add, BasicMulti, Billow, Checkerboard, Clamp, Constant, Curve, Cylinders, Exponent,
+        Fbm, HybridMulti, Max, Min, MultiFractal, Multiply, Negate, NoiseFn, OpenSimplex, Perlin,
+        PerlinSurflet, Power, RidgedMulti, ScaleBias, Seedable, Simplex, SuperSimplex, Terrace,
+        Value, Worley,
     },
     ordered_float::OrderedFloat,
     std::cell::RefCell,
@@ -54,8 +59,10 @@ pub enum Expr {
     Add([Box<Expr>; 2]),
     BasicMulti(FractalExpr),
     Billow(FractalExpr),
+    Checkerboard(u32),
     Clamp(ClampExpr),
     Curve(CurveExpr),
+    Cylinders(f64),
     Exponent(ExponentExpr),
     F64(f64),
     Fbm(FractalExpr),
@@ -64,11 +71,17 @@ pub enum Expr {
     Min([Box<Expr>; 2]),
     Multiply([Box<Expr>; 2]),
     Negate(Box<Expr>),
+    OpenSimplex(u32),
     Perlin(u32),
+    PerlinSurflet(u32),
     Power([Box<Expr>; 2]),
     RidgedMulti(RigidFractalExpr),
     ScaleBias(ScaleBiasExpr),
+    Simplex(u32),
+    SuperSimplex(u32),
     Terrace(TerraceExpr),
+    Value(u32),
+    Worley(WorleyExpr),
 }
 
 impl Expr {
@@ -192,16 +205,18 @@ impl Expr {
                 Source::Value => Self::billow::<Value>(expr),
                 Source::Worley => Self::billow::<Worley>(expr),
             },
+            &Self::Checkerboard(size) => Box::new(Checkerboard::new(size as _)),
             Self::Clamp(expr) => Box::new(
                 Clamp::new(expr.source.noise())
                     .set_lower_bound(expr.lower_bound.min(expr.upper_bound))
                     .set_upper_bound(expr.lower_bound.max(expr.upper_bound)),
             ),
             Self::Curve(expr) => Self::curve(expr),
+            &Self::Cylinders(frequency) => Box::new(Cylinders::new().set_frequency(frequency)),
             Self::Exponent(expr) => {
                 Box::new(Exponent::new(expr.source.noise()).set_exponent(expr.exponent))
             }
-            Self::F64(value) => Box::new(Constant::new(*value)),
+            &Self::F64(value) => Box::new(Constant::new(value)),
             Self::Fbm(expr) => match expr.source {
                 Source::OpenSimplex => Self::fbm::<OpenSimplex>(expr),
                 Source::Perlin => Self::fbm::<Perlin>(expr),
@@ -226,10 +241,12 @@ impl Expr {
                 Box::new(Multiply::new(source1.noise(), source2.noise()))
             }
             Self::Negate(expr) => Box::new(Negate::new(expr.noise())),
+            &Self::OpenSimplex(seed) => Box::new(OpenSimplex::new(seed)),
+            &Self::Perlin(seed) => Box::new(Perlin::new(seed)),
+            &Self::PerlinSurflet(seed) => Box::new(PerlinSurflet::new(seed)),
             Self::Power([source1, source2]) => {
                 Box::new(Power::new(source1.noise(), source2.noise()))
             }
-            Self::Perlin(seed) => Box::new(Perlin::new(*seed)),
             Self::RidgedMulti(expr) => match expr.source {
                 Source::OpenSimplex => Self::rigid_multi::<OpenSimplex>(expr),
                 Source::Perlin => Self::rigid_multi::<Perlin>(expr),
@@ -244,7 +261,24 @@ impl Expr {
                     .set_bias(expr.bias)
                     .set_scale(expr.scale),
             ),
+            &Self::Simplex(seed) => Box::new(Simplex::new(seed)),
+            &Self::SuperSimplex(seed) => Box::new(SuperSimplex::new(seed)),
             Self::Terrace(expr) => Self::terrace(expr),
+            &Self::Value(seed) => Box::new(Value::new(seed)),
+            Self::Worley(expr) => Box::new(
+                Worley::new(expr.seed)
+                    .set_frequency(expr.frequency)
+                    .set_distance_function(match expr.distance_fn {
+                        DistanceFunction::Chebyshev => chebyshev,
+                        DistanceFunction::Euclidean => euclidean,
+                        DistanceFunction::EuclideanSquared => euclidean_squared,
+                        DistanceFunction::Manhattan => manhattan,
+                    })
+                    .set_return_type(match expr.return_ty {
+                        ReturnType::Distance => worley::ReturnType::Distance,
+                        ReturnType::Value => worley::ReturnType::Value,
+                    }),
+            ),
         }
     }
 
@@ -319,4 +353,12 @@ pub struct TerraceExpr {
 
     pub inverted: bool,
     pub control_points: Vec<f64>,
+}
+
+#[derive(Clone, Debug)]
+pub struct WorleyExpr {
+    pub seed: u32,
+    pub frequency: f64,
+    pub distance_fn: DistanceFunction,
+    pub return_ty: ReturnType,
 }
