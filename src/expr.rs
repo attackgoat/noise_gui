@@ -1,14 +1,15 @@
 use {
-    super::node::{DistanceFunction, FractalNode, ReturnType, Source},
+    super::node::{DistanceFunction, FractalNode, ReturnType, SourceType},
     noise::{
         core::worley::{
             self,
             distance_functions::{chebyshev, euclidean, euclidean_squared, manhattan},
         },
         Abs, Add, BasicMulti, Billow, Blend, Checkerboard, Clamp, Constant, Curve, Cylinders,
-        Exponent, Fbm, HybridMulti, Max, Min, MultiFractal, Multiply, Negate, NoiseFn, OpenSimplex,
-        Perlin, PerlinSurflet, Power, RidgedMulti, ScaleBias, Seedable, Select, Simplex,
-        SuperSimplex, Terrace, Value, Worley,
+        Displace, Exponent, Fbm, HybridMulti, Max, Min, MultiFractal, Multiply, Negate, NoiseFn,
+        OpenSimplex, Perlin, PerlinSurflet, Power, RidgedMulti, RotatePoint, ScaleBias, ScalePoint,
+        Seedable, Select, Simplex, SuperSimplex, Terrace, TranslatePoint, Turbulence, Value,
+        Worley,
     },
     ordered_float::OrderedFloat,
     std::cell::RefCell,
@@ -42,6 +43,13 @@ pub struct CurveExpr {
 }
 
 #[derive(Clone, Debug)]
+pub struct DisplaceExpr {
+    pub source: Box<Expr>,
+
+    pub axes: [Box<Expr>; 4],
+}
+
+#[derive(Clone, Debug)]
 pub struct ExponentExpr {
     pub source: Box<Expr>,
 
@@ -50,8 +58,7 @@ pub struct ExponentExpr {
 
 #[derive(Clone, Copy, Debug)]
 pub struct FractalExpr {
-    pub source: Source,
-
+    pub source_ty: SourceType,
     pub seed: u32,
     pub octaves: u32,
     pub frequency: f64,
@@ -70,6 +77,7 @@ pub enum Expr {
     Clamp(ClampExpr),
     Curve(CurveExpr),
     Cylinders(f64),
+    Displace(DisplaceExpr),
     Exponent(ExponentExpr),
     F64(f64),
     Fbm(FractalExpr),
@@ -83,11 +91,15 @@ pub enum Expr {
     PerlinSurflet(u32),
     Power([Box<Expr>; 2]),
     RidgedMulti(RigidFractalExpr),
+    RotatePoint(TransformExpr),
     ScaleBias(ScaleBiasExpr),
+    ScalePoint(TransformExpr),
     Select(SelectExpr),
     Simplex(u32),
     SuperSimplex(u32),
     Terrace(TerraceExpr),
+    TranslatePoint(TransformExpr),
+    Turbulence(TurbulenceExpr),
     Value(u32),
     Worley(WorleyExpr),
 }
@@ -195,23 +207,23 @@ impl Expr {
         match self {
             Self::Abs(expr) => Box::new(Abs::new(expr.noise())),
             Self::Add([source1, source2]) => Box::new(Add::new(source1.noise(), source2.noise())),
-            Self::BasicMulti(expr) => match expr.source {
-                Source::OpenSimplex => Self::basic_multi::<OpenSimplex>(expr),
-                Source::Perlin => Self::basic_multi::<Perlin>(expr),
-                Source::PerlinSurflet => Self::basic_multi::<PerlinSurflet>(expr),
-                Source::Simplex => Self::basic_multi::<Simplex>(expr),
-                Source::SuperSimplex => Self::basic_multi::<OpenSimplex>(expr),
-                Source::Value => Self::basic_multi::<Value>(expr),
-                Source::Worley => Self::basic_multi::<Worley>(expr),
+            Self::BasicMulti(expr) => match expr.source_ty {
+                SourceType::OpenSimplex => Self::basic_multi::<OpenSimplex>(expr),
+                SourceType::Perlin => Self::basic_multi::<Perlin>(expr),
+                SourceType::PerlinSurflet => Self::basic_multi::<PerlinSurflet>(expr),
+                SourceType::Simplex => Self::basic_multi::<Simplex>(expr),
+                SourceType::SuperSimplex => Self::basic_multi::<OpenSimplex>(expr),
+                SourceType::Value => Self::basic_multi::<Value>(expr),
+                SourceType::Worley => Self::basic_multi::<Worley>(expr),
             },
-            Self::Billow(expr) => match expr.source {
-                Source::OpenSimplex => Self::billow::<OpenSimplex>(expr),
-                Source::Perlin => Self::billow::<Perlin>(expr),
-                Source::PerlinSurflet => Self::billow::<PerlinSurflet>(expr),
-                Source::Simplex => Self::billow::<Simplex>(expr),
-                Source::SuperSimplex => Self::billow::<OpenSimplex>(expr),
-                Source::Value => Self::billow::<Value>(expr),
-                Source::Worley => Self::billow::<Worley>(expr),
+            Self::Billow(expr) => match expr.source_ty {
+                SourceType::OpenSimplex => Self::billow::<OpenSimplex>(expr),
+                SourceType::Perlin => Self::billow::<Perlin>(expr),
+                SourceType::PerlinSurflet => Self::billow::<PerlinSurflet>(expr),
+                SourceType::Simplex => Self::billow::<Simplex>(expr),
+                SourceType::SuperSimplex => Self::billow::<OpenSimplex>(expr),
+                SourceType::Value => Self::billow::<Value>(expr),
+                SourceType::Worley => Self::billow::<Worley>(expr),
             },
             Self::Blend(expr) => Box::new(Blend::new(
                 expr.sources[0].noise(),
@@ -226,27 +238,34 @@ impl Expr {
             ),
             Self::Curve(expr) => Self::curve(expr),
             &Self::Cylinders(frequency) => Box::new(Cylinders::new().set_frequency(frequency)),
+            Self::Displace(expr) => Box::new(Displace::new(
+                expr.source.noise(),
+                expr.axes[0].noise(),
+                expr.axes[1].noise(),
+                expr.axes[2].noise(),
+                expr.axes[3].noise(),
+            )),
             Self::Exponent(expr) => {
                 Box::new(Exponent::new(expr.source.noise()).set_exponent(expr.exponent))
             }
             &Self::F64(value) => Box::new(Constant::new(value)),
-            Self::Fbm(expr) => match expr.source {
-                Source::OpenSimplex => Self::fbm::<OpenSimplex>(expr),
-                Source::Perlin => Self::fbm::<Perlin>(expr),
-                Source::PerlinSurflet => Self::fbm::<PerlinSurflet>(expr),
-                Source::Simplex => Self::fbm::<Simplex>(expr),
-                Source::SuperSimplex => Self::fbm::<OpenSimplex>(expr),
-                Source::Value => Self::fbm::<Value>(expr),
-                Source::Worley => Self::fbm::<Worley>(expr),
+            Self::Fbm(expr) => match expr.source_ty {
+                SourceType::OpenSimplex => Self::fbm::<OpenSimplex>(expr),
+                SourceType::Perlin => Self::fbm::<Perlin>(expr),
+                SourceType::PerlinSurflet => Self::fbm::<PerlinSurflet>(expr),
+                SourceType::Simplex => Self::fbm::<Simplex>(expr),
+                SourceType::SuperSimplex => Self::fbm::<OpenSimplex>(expr),
+                SourceType::Value => Self::fbm::<Value>(expr),
+                SourceType::Worley => Self::fbm::<Worley>(expr),
             },
-            Self::HybridMulti(expr) => match expr.source {
-                Source::OpenSimplex => Self::hybrid_multi::<OpenSimplex>(expr),
-                Source::Perlin => Self::hybrid_multi::<Perlin>(expr),
-                Source::PerlinSurflet => Self::hybrid_multi::<PerlinSurflet>(expr),
-                Source::Simplex => Self::hybrid_multi::<Simplex>(expr),
-                Source::SuperSimplex => Self::hybrid_multi::<OpenSimplex>(expr),
-                Source::Value => Self::hybrid_multi::<Value>(expr),
-                Source::Worley => Self::hybrid_multi::<Worley>(expr),
+            Self::HybridMulti(expr) => match expr.source_ty {
+                SourceType::OpenSimplex => Self::hybrid_multi::<OpenSimplex>(expr),
+                SourceType::Perlin => Self::hybrid_multi::<Perlin>(expr),
+                SourceType::PerlinSurflet => Self::hybrid_multi::<PerlinSurflet>(expr),
+                SourceType::Simplex => Self::hybrid_multi::<Simplex>(expr),
+                SourceType::SuperSimplex => Self::hybrid_multi::<OpenSimplex>(expr),
+                SourceType::Value => Self::hybrid_multi::<Value>(expr),
+                SourceType::Worley => Self::hybrid_multi::<Worley>(expr),
             },
             Self::Max([source1, source2]) => Box::new(Max::new(source1.noise(), source2.noise())),
             Self::Min([source1, source2]) => Box::new(Min::new(source1.noise(), source2.noise())),
@@ -260,20 +279,34 @@ impl Expr {
             Self::Power([source1, source2]) => {
                 Box::new(Power::new(source1.noise(), source2.noise()))
             }
-            Self::RidgedMulti(expr) => match expr.source {
-                Source::OpenSimplex => Self::rigid_multi::<OpenSimplex>(expr),
-                Source::Perlin => Self::rigid_multi::<Perlin>(expr),
-                Source::PerlinSurflet => Self::rigid_multi::<PerlinSurflet>(expr),
-                Source::Simplex => Self::rigid_multi::<Simplex>(expr),
-                Source::SuperSimplex => Self::rigid_multi::<OpenSimplex>(expr),
-                Source::Value => Self::rigid_multi::<Value>(expr),
-                Source::Worley => Self::rigid_multi::<Worley>(expr),
+            Self::RidgedMulti(expr) => match expr.source_ty {
+                SourceType::OpenSimplex => Self::rigid_multi::<OpenSimplex>(expr),
+                SourceType::Perlin => Self::rigid_multi::<Perlin>(expr),
+                SourceType::PerlinSurflet => Self::rigid_multi::<PerlinSurflet>(expr),
+                SourceType::Simplex => Self::rigid_multi::<Simplex>(expr),
+                SourceType::SuperSimplex => Self::rigid_multi::<OpenSimplex>(expr),
+                SourceType::Value => Self::rigid_multi::<Value>(expr),
+                SourceType::Worley => Self::rigid_multi::<Worley>(expr),
             },
+            Self::RotatePoint(expr) => Box::new(RotatePoint::new(expr.source.noise()).set_angles(
+                expr.axes[0],
+                expr.axes[1],
+                expr.axes[2],
+                expr.axes[3],
+            )),
             Self::ScaleBias(expr) => Box::new(
                 ScaleBias::new(expr.source.noise())
                     .set_bias(expr.bias)
                     .set_scale(expr.scale),
             ),
+            Self::ScalePoint(expr) => {
+                Box::new(ScalePoint::new(expr.source.noise()).set_all_scales(
+                    expr.axes[0],
+                    expr.axes[1],
+                    expr.axes[2],
+                    expr.axes[3],
+                ))
+            }
             Self::Select(expr) => Box::new(
                 Select::new(
                     expr.sources[0].noise(),
@@ -286,6 +319,23 @@ impl Expr {
             &Self::Simplex(seed) => Box::new(Simplex::new(seed)),
             &Self::SuperSimplex(seed) => Box::new(SuperSimplex::new(seed)),
             Self::Terrace(expr) => Self::terrace(expr),
+            Self::TranslatePoint(expr) => Box::new(
+                TranslatePoint::new(expr.source.noise()).set_all_translations(
+                    expr.axes[0],
+                    expr.axes[1],
+                    expr.axes[2],
+                    expr.axes[3],
+                ),
+            ),
+            Self::Turbulence(expr) => match expr.source_ty {
+                SourceType::OpenSimplex => Self::turbulence::<OpenSimplex>(expr),
+                SourceType::Perlin => Self::turbulence::<Perlin>(expr),
+                SourceType::PerlinSurflet => Self::turbulence::<PerlinSurflet>(expr),
+                SourceType::Simplex => Self::turbulence::<Simplex>(expr),
+                SourceType::SuperSimplex => Self::turbulence::<OpenSimplex>(expr),
+                SourceType::Value => Self::turbulence::<Value>(expr),
+                SourceType::Worley => Self::turbulence::<Worley>(expr),
+            },
             &Self::Value(seed) => Box::new(Value::new(seed)),
             Self::Worley(expr) => Box::new(
                 Worley::new(expr.seed)
@@ -315,6 +365,19 @@ impl Expr {
                 .set_lacunarity(expr.lacunarity)
                 .set_persistence(expr.persistence)
                 .set_attenuation(expr.attenuation),
+        )
+    }
+
+    fn turbulence<T>(expr: &TurbulenceExpr) -> Box<Turbulence<Box<dyn NoiseFn<f64, 3>>, T>>
+    where
+        T: Default + Seedable,
+    {
+        Box::new(
+            Turbulence::<Box<dyn NoiseFn<f64, 3>>, T>::new(expr.source.noise())
+                .set_seed(expr.seed)
+                .set_frequency(expr.frequency)
+                .set_power(expr.power)
+                .set_roughness(expr.roughness as _),
         )
     }
 
@@ -351,8 +414,7 @@ impl Expr {
 
 #[derive(Clone, Copy, Debug)]
 pub struct RigidFractalExpr {
-    pub source: Source,
-
+    pub source_ty: SourceType,
     pub seed: u32,
     pub octaves: u32,
     pub frequency: f64,
@@ -373,6 +435,7 @@ pub struct ScaleBiasExpr {
 pub struct SelectExpr {
     pub sources: [Box<Expr>; 2],
     pub control: Box<Expr>,
+
     pub lower_bound: f64,
     pub upper_bound: f64,
     pub falloff: f64,
@@ -384,6 +447,24 @@ pub struct TerraceExpr {
 
     pub inverted: bool,
     pub control_points: Vec<f64>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TransformExpr {
+    pub source: Box<Expr>,
+
+    pub axes: [f64; 4],
+}
+
+#[derive(Clone, Debug)]
+pub struct TurbulenceExpr {
+    pub source: Box<Expr>,
+
+    pub source_ty: SourceType,
+    pub seed: u32,
+    pub frequency: f64,
+    pub power: f64,
+    pub roughness: u32,
 }
 
 #[derive(Clone, Debug)]
