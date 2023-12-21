@@ -1,7 +1,7 @@
 use {
     super::expr::{
-        ClampExpr, ControlPointExpr, CurveExpr, ExponentExpr, Expr, FractalExpr, RigidFractalExpr,
-        ScaleBiasExpr, TerraceExpr, WorleyExpr,
+        BlendExpr, ClampExpr, ControlPointExpr, CurveExpr, ExponentExpr, Expr, FractalExpr,
+        RigidFractalExpr, ScaleBiasExpr, SelectExpr, TerraceExpr, WorleyExpr,
     },
     egui::TextureHandle,
     egui_snarl::Snarl,
@@ -12,6 +12,15 @@ use {
     serde::{Deserialize, Serialize},
     std::collections::HashSet,
 };
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct BlendNode {
+    pub image: Image,
+
+    pub input_node_indices: [Option<usize>; 2],
+    pub control_node_idx: Option<usize>,
+    pub output_node_indices: HashSet<usize>,
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CheckerboardNode {
@@ -272,6 +281,7 @@ pub enum NoiseNode {
     Add(CombinerNode),
     BasicMulti(FractalNode),
     Billow(FractalNode),
+    Blend(BlendNode),
     Clamp(ClampNode),
     Checkerboard(CheckerboardNode),
     ControlPoint(ControlPointNode),
@@ -291,6 +301,7 @@ pub enum NoiseNode {
     Power(CombinerNode),
     RigidMulti(RigidFractalNode),
     ScaleBias(ScaleBiasNode),
+    Select(SelectNode),
     Simplex(GeneratorNode),
     SuperSimplex(GeneratorNode),
     Terrace(TerraceNode),
@@ -300,6 +311,14 @@ pub enum NoiseNode {
 }
 
 impl NoiseNode {
+    pub fn as_blend_mut(&mut self) -> Option<&mut BlendNode> {
+        if let Self::Blend(node) = self {
+            Some(node)
+        } else {
+            None
+        }
+    }
+
     pub fn as_checkerboard_mut(&mut self) -> Option<&mut CheckerboardNode> {
         if let Self::Checkerboard(node) = self {
             Some(node)
@@ -427,6 +446,14 @@ impl NoiseNode {
         }
     }
 
+    pub fn as_select_mut(&mut self) -> Option<&mut SelectNode> {
+        if let Self::Select(node) = self {
+            Some(node)
+        } else {
+            None
+        }
+    }
+
     pub fn as_terrace_mut(&mut self) -> Option<&mut TerraceNode> {
         if let Self::Terrace(node) = self {
             Some(node)
@@ -485,6 +512,23 @@ impl NoiseNode {
                 frequency: node.frequency.value(snarl),
                 lacunarity: node.lacunarity.value(snarl),
                 persistence: node.persistence.value(snarl),
+            }),
+            Self::Blend(node) => Expr::Blend(BlendExpr {
+                sources: node
+                    .input_node_indices
+                    .iter()
+                    .map(|node_idx| {
+                        node_idx
+                            .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
+                            .unwrap_or_else(|| Box::new(Expr::F64(0.0)))
+                    })
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap(),
+                control: node
+                    .control_node_idx
+                    .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
+                    .unwrap_or_else(|| Box::new(Expr::F64(0.0))),
             }),
             Self::Checkerboard(node) => Expr::Checkerboard(node.size.value(snarl)),
             Self::Clamp(node) => Expr::Clamp(ClampExpr {
@@ -616,6 +660,26 @@ impl NoiseNode {
                 scale: node.scale.value(snarl),
                 bias: node.bias.value(snarl),
             }),
+            Self::Select(node) => Expr::Select(SelectExpr {
+                sources: node
+                    .input_node_indices
+                    .iter()
+                    .map(|node_idx| {
+                        node_idx
+                            .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
+                            .unwrap_or_else(|| Box::new(Expr::F64(0.0)))
+                    })
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap(),
+                control: node
+                    .control_node_idx
+                    .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
+                    .unwrap_or_else(|| Box::new(Expr::F64(0.0))),
+                lower_bound: node.lower_bound.value(snarl),
+                upper_bound: node.upper_bound.value(snarl),
+                falloff: node.falloff.value(snarl),
+            }),
             Self::Simplex(node) => Expr::Simplex(node.seed.value(snarl)),
             Self::SuperSimplex(node) => Expr::SuperSimplex(node.seed.value(snarl)),
             Self::Terrace(node) => Expr::Terrace(TerraceExpr {
@@ -654,6 +718,7 @@ impl NoiseNode {
             | Self::Add(CombinerNode { image, .. })
             | Self::BasicMulti(FractalNode { image, .. })
             | Self::Billow(FractalNode { image, .. })
+            | Self::Blend(BlendNode { image, .. })
             | Self::Checkerboard(CheckerboardNode { image, .. })
             | Self::Clamp(ClampNode { image, .. })
             | Self::Curve(CurveNode { image, .. })
@@ -671,6 +736,7 @@ impl NoiseNode {
             | Self::Power(CombinerNode { image, .. })
             | Self::RigidMulti(RigidFractalNode { image, .. })
             | Self::ScaleBias(ScaleBiasNode { image, .. })
+            | Self::Select(SelectNode { image, .. })
             | Self::Simplex(GeneratorNode { image, .. })
             | Self::SuperSimplex(GeneratorNode { image, .. })
             | Self::Terrace(TerraceNode { image, .. })
@@ -686,6 +752,7 @@ impl NoiseNode {
             | Self::Add(CombinerNode { image, .. })
             | Self::BasicMulti(FractalNode { image, .. })
             | Self::Billow(FractalNode { image, .. })
+            | Self::Blend(BlendNode { image, .. })
             | Self::Checkerboard(CheckerboardNode { image, .. })
             | Self::Clamp(ClampNode { image, .. })
             | Self::Curve(CurveNode { image, .. })
@@ -703,6 +770,7 @@ impl NoiseNode {
             | Self::Power(CombinerNode { image, .. })
             | Self::RigidMulti(RigidFractalNode { image, .. })
             | Self::ScaleBias(ScaleBiasNode { image, .. })
+            | Self::Select(SelectNode { image, .. })
             | Self::Simplex(GeneratorNode { image, .. })
             | Self::SuperSimplex(GeneratorNode { image, .. })
             | Self::Terrace(TerraceNode { image, .. })
@@ -719,6 +787,18 @@ impl NoiseNode {
                 ..
             })
             | Self::Add(CombinerNode {
+                output_node_indices,
+                ..
+            })
+            | Self::BasicMulti(FractalNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Billow(FractalNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Blend(BlendNode {
                 output_node_indices,
                 ..
             })
@@ -743,14 +823,6 @@ impl NoiseNode {
                 ..
             })
             | Self::Exponent(ExponentNode {
-                output_node_indices,
-                ..
-            })
-            | Self::BasicMulti(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Billow(FractalNode {
                 output_node_indices,
                 ..
             })
@@ -803,6 +875,10 @@ impl NoiseNode {
                 ..
             })
             | Self::ScaleBias(ScaleBiasNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Select(SelectNode {
                 output_node_indices,
                 ..
             })
@@ -843,6 +919,18 @@ impl NoiseNode {
                 output_node_indices,
                 ..
             })
+            | Self::BasicMulti(FractalNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Billow(FractalNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Blend(BlendNode {
+                output_node_indices,
+                ..
+            })
             | Self::Checkerboard(CheckerboardNode {
                 output_node_indices,
                 ..
@@ -864,14 +952,6 @@ impl NoiseNode {
                 ..
             })
             | Self::Exponent(ExponentNode {
-                output_node_indices,
-                ..
-            })
-            | Self::BasicMulti(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Billow(FractalNode {
                 output_node_indices,
                 ..
             })
@@ -924,6 +1004,10 @@ impl NoiseNode {
                 ..
             })
             | Self::ScaleBias(ScaleBiasNode {
+                output_node_indices,
+                ..
+            })
+            | Self::Select(SelectNode {
                 output_node_indices,
                 ..
             })
@@ -1001,6 +1085,33 @@ pub struct ScaleBiasNode {
 
     pub scale: NodeValue<f64>,
     pub bias: NodeValue<f64>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct SelectNode {
+    pub image: Image,
+
+    pub input_node_indices: [Option<usize>; 2],
+    pub control_node_idx: Option<usize>,
+    pub output_node_indices: HashSet<usize>,
+
+    pub lower_bound: NodeValue<f64>,
+    pub upper_bound: NodeValue<f64>,
+    pub falloff: NodeValue<f64>,
+}
+
+impl Default for SelectNode {
+    fn default() -> Self {
+        Self {
+            image: Default::default(),
+            input_node_indices: Default::default(),
+            control_node_idx: Default::default(),
+            output_node_indices: Default::default(),
+            lower_bound: NodeValue::Value(0.0),
+            upper_bound: NodeValue::Value(1.0),
+            falloff: NodeValue::Value(0.0),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

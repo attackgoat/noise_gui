@@ -5,14 +5,20 @@ use {
             self,
             distance_functions::{chebyshev, euclidean, euclidean_squared, manhattan},
         },
-        Abs, Add, BasicMulti, Billow, Checkerboard, Clamp, Constant, Curve, Cylinders, Exponent,
-        Fbm, HybridMulti, Max, Min, MultiFractal, Multiply, Negate, NoiseFn, OpenSimplex, Perlin,
-        PerlinSurflet, Power, RidgedMulti, ScaleBias, Seedable, Simplex, SuperSimplex, Terrace,
-        Value, Worley,
+        Abs, Add, BasicMulti, Billow, Blend, Checkerboard, Clamp, Constant, Curve, Cylinders,
+        Exponent, Fbm, HybridMulti, Max, Min, MultiFractal, Multiply, Negate, NoiseFn, OpenSimplex,
+        Perlin, PerlinSurflet, Power, RidgedMulti, ScaleBias, Seedable, Select, Simplex,
+        SuperSimplex, Terrace, Value, Worley,
     },
     ordered_float::OrderedFloat,
     std::cell::RefCell,
 };
+
+#[derive(Clone, Debug)]
+pub struct BlendExpr {
+    pub sources: [Box<Expr>; 2],
+    pub control: Box<Expr>,
+}
 
 #[derive(Clone, Debug)]
 pub struct ClampExpr {
@@ -59,6 +65,7 @@ pub enum Expr {
     Add([Box<Expr>; 2]),
     BasicMulti(FractalExpr),
     Billow(FractalExpr),
+    Blend(BlendExpr),
     Checkerboard(u32),
     Clamp(ClampExpr),
     Curve(CurveExpr),
@@ -77,6 +84,7 @@ pub enum Expr {
     Power([Box<Expr>; 2]),
     RidgedMulti(RigidFractalExpr),
     ScaleBias(ScaleBiasExpr),
+    Select(SelectExpr),
     Simplex(u32),
     SuperSimplex(u32),
     Terrace(TerraceExpr),
@@ -205,6 +213,11 @@ impl Expr {
                 Source::Value => Self::billow::<Value>(expr),
                 Source::Worley => Self::billow::<Worley>(expr),
             },
+            Self::Blend(expr) => Box::new(Blend::new(
+                expr.sources[0].noise(),
+                expr.sources[1].noise(),
+                expr.control.noise(),
+            )),
             &Self::Checkerboard(size) => Box::new(Checkerboard::new(size as _)),
             Self::Clamp(expr) => Box::new(
                 Clamp::new(expr.source.noise())
@@ -260,6 +273,15 @@ impl Expr {
                 ScaleBias::new(expr.source.noise())
                     .set_bias(expr.bias)
                     .set_scale(expr.scale),
+            ),
+            Self::Select(expr) => Box::new(
+                Select::new(
+                    expr.sources[0].noise(),
+                    expr.sources[1].noise(),
+                    expr.control.noise(),
+                )
+                .set_bounds(expr.lower_bound, expr.upper_bound)
+                .set_falloff(expr.falloff),
             ),
             &Self::Simplex(seed) => Box::new(Simplex::new(seed)),
             &Self::SuperSimplex(seed) => Box::new(SuperSimplex::new(seed)),
@@ -345,6 +367,15 @@ pub struct ScaleBiasExpr {
 
     pub scale: f64,
     pub bias: f64,
+}
+
+#[derive(Clone, Debug)]
+pub struct SelectExpr {
+    pub sources: [Box<Expr>; 2],
+    pub control: Box<Expr>,
+    pub lower_bound: f64,
+    pub upper_bound: f64,
+    pub falloff: f64,
 }
 
 #[derive(Clone, Debug)]
