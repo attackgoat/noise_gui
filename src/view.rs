@@ -7,8 +7,8 @@ use {
         TerraceNode, TransformNode, TurbulenceNode, UnaryNode, WorleyNode,
     },
     egui::{
-        epaint::PathShape, vec2, Align, Color32, ComboBox, DragValue, Layout, Pos2, RichText,
-        Shape, Stroke, Style, TextEdit, Ui, Vec2,
+        epaint::PathShape, vec2, Align, Color32, ComboBox, DragValue, Layout, Pos2, Shape, Stroke,
+        Style, TextEdit, Ui, Vec2,
     },
     egui_snarl::{
         ui::{InPin, OutPin, PinInfo, SnarlViewer},
@@ -17,6 +17,9 @@ use {
     log::debug,
     std::collections::HashSet,
 };
+
+#[cfg(debug_assertions)]
+use egui::RichText;
 
 pub struct Viewer<'a> {
     pub removed_node_indices: &'a mut HashSet<usize>,

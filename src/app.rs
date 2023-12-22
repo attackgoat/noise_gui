@@ -6,7 +6,7 @@ use {
         thread::{ImageInfo, Threads},
         view::Viewer,
     },
-    eframe::{set_value, CreationContext, Frame, Storage, APP_KEY},
+    eframe::{get_value, set_value, CreationContext, Frame, Storage, APP_KEY},
     egui::{
         github_link_file, menu, warn_if_debug_build, widgets, Align, CentralPanel, Color32,
         ColorImage, Context, Id, Layout, TopBottomPanel, ViewportCommand,
@@ -19,9 +19,6 @@ use {
         sync::{Arc, RwLock},
     },
 };
-
-#[cfg(not(debug_assertions))]
-use eframe::get_value;
 
 pub type NodeExprs = Arc<RwLock<HashMap<usize, (usize, Arc<Expr>)>>>;
 
@@ -42,15 +39,11 @@ impl App {
     ];
 
     pub fn new(#[allow(unused_variables)] cc: &CreationContext<'_>) -> Self {
-        #[cfg(not(debug_assertions))]
         let snarl: Snarl<NoiseNode> = if let Some(storage) = cc.storage {
             get_value(storage, APP_KEY).unwrap_or_default()
         } else {
-            Snarl::new()
+            Default::default()
         };
-
-        #[cfg(debug_assertions)]
-        let snarl: Snarl<NoiseNode> = Snarl::new();
 
         let node_exprs = Default::default();
         let threads = Threads::new(&node_exprs);
@@ -235,20 +228,44 @@ impl eframe::App for App {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        #[cfg(target_arch = "wasm32")]
+        self.threads.update();
+
         self.update_images();
 
         TopBottomPanel::top("top_panel").show(ctx, |ui| {
             menu::bar(ui, |ui| {
-                // NOTE: no File->Quit on web pages!
-                let is_web = cfg!(target_arch = "wasm32");
-                if !is_web {
-                    ui.menu_button("File", |ui| {
-                        if ui.button("Quit").clicked() {
+                ui.menu_button("File", |ui| {
+                    if ui.button("New").clicked() {
+                        self.node_exprs = Default::default();
+                        self.removed_node_indices = Default::default();
+                        self.snarl = Snarl::new();
+                        self.updated_node_indices = Default::default();
+                        self.version = 0;
+
+                        ui.close_menu();
+                    }
+
+                    ui.separator();
+
+                    if ui.button("Open").clicked() {
+                        ui.close_menu();
+                    }
+
+                    if ui.button("Save").clicked() {
+                        ui.close_menu();
+                    }
+
+                    let is_web = cfg!(target_arch = "wasm32");
+                    if !is_web {
+                        ui.separator();
+
+                        if ui.button("Exit").clicked() {
                             ctx.send_viewport_cmd(ViewportCommand::Close);
                         }
-                    });
-                    ui.add_space(16.0);
-                }
+                    }
+                });
+                ui.add_space(16.0);
 
                 widgets::global_dark_light_mode_buttons(ui);
             });

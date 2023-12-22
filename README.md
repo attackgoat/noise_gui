@@ -4,20 +4,19 @@ A graphical user interface for [Noise-rs](https://github.com/Razaekel/noise-rs).
 
 TODO:
 
-- [ ] Add node implementations for each `NoiseFn`
+- [x] Add node implementations for each `NoiseFn`
 - [ ] Allow saving the graph project to a file
 - [ ] Allow zoom/pan on the noise preview images
 - [ ] Allow image/data export
 - [ ] Warning when noise nodes won't render (not enough control points, etc: see expr.rs)
-- [ ] Support wasm with online version
-- [ ] Colors that differ input/output nodes and wires by type
+- [x] Support wasm with online version
+- [x] Colors that differ input/output nodes and wires by type
 - [ ] Automatic NoiseFn cached values
 - [ ] Fix bugs
 
 ## Bugs
 
 - Cyclic graphs: need to check for this and make sure users cannot do it!
-- Connecting wrong things together
 
 ## Data model export
 
