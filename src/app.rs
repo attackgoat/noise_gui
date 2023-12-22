@@ -237,11 +237,7 @@ impl eframe::App for App {
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("New").clicked() {
-                        self.node_exprs = Default::default();
-                        self.removed_node_indices = Default::default();
                         self.snarl = Snarl::new();
-                        self.updated_node_indices = Default::default();
-                        self.version = 0;
 
                         ui.close_menu();
                     }
