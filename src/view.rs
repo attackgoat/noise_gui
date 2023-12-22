@@ -23,6 +23,12 @@ pub struct Viewer<'a> {
 impl<'a> Viewer<'a> {
     const AXES: [&'static str; 4] = ["X", "Y", "Z", "W"];
 
+    fn control_point_pin_info(is_input: bool, filled: bool) -> PinInfo {
+        let fill = Color32::LIGHT_RED;
+
+        Self::scalar_pin_info(is_input, filled, fill)
+    }
+
     // TODO: Make generic (see other combo box functions)
     fn distance_fn_combo_box(
         &mut self,
@@ -69,6 +75,12 @@ impl<'a> Viewer<'a> {
         if ui.add(egui::DragValue::new(value)).changed() {
             self.updated_node_indices.insert(node_idx);
         }
+    }
+
+    fn f64_pin_info(is_input: bool, filled: bool) -> PinInfo {
+        let fill = Color32::LIGHT_BLUE;
+
+        Self::scalar_pin_info(is_input, filled, fill)
     }
 
     fn image_pin_info(is_input: bool, filled: bool) -> PinInfo {
@@ -164,6 +176,56 @@ impl<'a> Viewer<'a> {
                     }
                 }
             });
+    }
+
+    fn scalar_pin_info(is_input: bool, filled: bool, fill: Color32) -> PinInfo {
+        let (r, g, b, _) = fill.to_tuple();
+
+        PinInfo::default()
+            .with_fill(fill)
+            .with_stroke(Stroke::new(
+                1.5,
+                Color32::from_rgba_unmultiplied(r, g, b, 192),
+            ))
+            .with_shape(egui_snarl::ui::PinShape::Custom(Box::new(
+                move |painter, rect, _fill, stroke| {
+                    const S: f32 = 1.0;
+                    const A: Vec2 = vec2(0.64 * S, 0.07 * S);
+                    const B: Vec2 = vec2(0.64 * S, -0.07 * S);
+                    const C: Vec2 = vec2(0.72 * S, 0.0 * S);
+
+                    let mut pos = rect.min;
+                    let size = rect.size();
+                    pos.y += 0.5 * size.y;
+
+                    if !is_input {
+                        pos.x += 0.6 * size.x;
+                    }
+
+                    let points = vec![pos + A * size, pos + B * size, pos + C * size];
+
+                    painter.add(Shape::Path(PathShape {
+                        points,
+                        closed: true,
+                        fill,
+                        stroke,
+                    }));
+
+                    let radius = 0.5 * size.x;
+
+                    painter.add(if filled {
+                        Shape::circle_filled(pos, radius, fill)
+                    } else {
+                        Shape::circle_stroke(pos, radius, stroke)
+                    });
+                },
+            )))
+    }
+
+    fn u32_pin_info(is_input: bool, filled: bool) -> PinInfo {
+        let fill = Color32::LIGHT_GREEN;
+
+        Self::scalar_pin_info(is_input, filled, fill)
     }
 }
 
@@ -1730,7 +1792,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = seed.as_value_mut() {
                     self.drag_value_u32(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::u32_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1738,7 +1800,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::u32_pin_info(true, true)
                 }
             }
             (0, NoiseNode::Checkerboard(CheckerboardNode { size, .. })) => {
@@ -1747,7 +1809,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = size.as_value_mut() {
                     self.drag_value_u32(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::u32_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1755,7 +1817,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::u32_pin_info(true, true)
                 }
             }
             (0, NoiseNode::ControlPoint(node)) => {
@@ -1764,7 +1826,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.input.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1772,7 +1834,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (0, NoiseNode::Cylinders(node)) => {
@@ -1781,7 +1843,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.frequency.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1789,7 +1851,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (
@@ -1835,7 +1897,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.output.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1843,7 +1905,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (
@@ -1864,7 +1926,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         self.updated_node_indices.insert(pin.id.node);
                     }
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::u32_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1872,7 +1934,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::u32_pin_info(true, true)
                 }
             }
             (1, NoiseNode::Clamp(node)) => {
@@ -1881,7 +1943,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.lower_bound.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1889,7 +1951,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (1, NoiseNode::Exponent(node)) => {
@@ -1898,7 +1960,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.exponent.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1906,7 +1968,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (1, NoiseNode::Turbulence(node)) => {
@@ -1915,7 +1977,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.seed.as_value_mut() {
                     self.drag_value_u32(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::u32_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1923,14 +1985,14 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::u32_pin_info(true, true)
                 }
             }
             (1..=4, NoiseNode::Displace(node)) => {
                 ui.label(Self::AXES[pin.id.input - 1]);
 
                 if node.axes[pin.id.input - 1].is_none() {
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::image_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1938,7 +2000,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::image_pin_info(true, true)
                 }
             }
             (
@@ -1952,7 +2014,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.axes[pin.id.input - 1].as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1963,7 +2025,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (1, NoiseNode::ScaleBias(node)) => {
@@ -1972,7 +2034,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.scale.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1980,7 +2042,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (1, NoiseNode::Worley(node)) => {
@@ -1989,7 +2051,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.frequency.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -1997,7 +2059,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (
@@ -2013,7 +2075,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = frequency.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2021,7 +2083,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (
@@ -2048,7 +2110,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.upper_bound.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2056,7 +2118,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (2, NoiseNode::ScaleBias(node)) => {
@@ -2065,7 +2127,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.bias.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2073,7 +2135,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (2, NoiseNode::Turbulence(node)) => {
@@ -2082,7 +2144,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.frequency.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2090,7 +2152,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (
@@ -2106,7 +2168,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = lacunarity.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2114,7 +2176,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (3, NoiseNode::Select(node)) => {
@@ -2123,7 +2185,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.lower_bound.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2131,7 +2193,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (3, NoiseNode::Turbulence(node)) => {
@@ -2140,7 +2202,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.power.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2148,7 +2210,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (
@@ -2164,7 +2226,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = persistence.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2172,7 +2234,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (4, NoiseNode::Select(node)) => {
@@ -2181,7 +2243,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.upper_bound.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2189,7 +2251,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (4, NoiseNode::Turbulence(node)) => {
@@ -2198,7 +2260,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.roughness.as_value_mut() {
                     self.drag_value_u32(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::u32_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2206,7 +2268,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::u32_pin_info(true, true)
                 }
             }
             (5, NoiseNode::RigidMulti(node)) => {
@@ -2215,7 +2277,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.attenuation.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2223,7 +2285,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (5, NoiseNode::Select(node)) => {
@@ -2232,7 +2294,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 if let Some(value) = node.falloff.as_value_mut() {
                     self.drag_value_f64(ui, value, pin.id.node);
 
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2240,7 +2302,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             (control_point_idx, NoiseNode::Curve(node)) => {
@@ -2266,7 +2328,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     .flatten()
                     .is_none()
                 {
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::control_point_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2281,11 +2343,11 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::control_point_pin_info(true, true)
                 }
             }
             (control_point_idx, NoiseNode::Terrace(node)) => {
-                ui.label("Control Point");
+                ui.label("Decimal");
 
                 let control_point_idx = control_point_idx - 1;
 
@@ -2307,7 +2369,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     .flatten()
                     .is_none()
                 {
-                    PinInfo::circle().with_fill(egui::Color32::GRAY)
+                    Self::f64_pin_info(true, false)
                 } else {
                     #[cfg(debug_assertions)]
                     ui.label(
@@ -2322,7 +2384,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         .color(Color32::DEBUG_COLOR),
                     );
 
-                    PinInfo::circle().with_fill(egui::Color32::GREEN)
+                    Self::f64_pin_info(true, true)
                 }
             }
             _ => unreachable!(),
@@ -2378,14 +2440,16 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             | NoiseNode::Worley(_) => {
                 Self::image_pin_info(false, !node.output_node_indices().is_empty())
             }
-            NoiseNode::ControlPoint(_) => PinInfo::square().with_fill(egui::Color32::GOLD),
+            NoiseNode::ControlPoint(_) => {
+                Self::control_point_pin_info(false, !node.output_node_indices().is_empty())
+            }
             NoiseNode::F64(_) => {
-                ui.label("f64");
-                PinInfo::square().with_fill(egui::Color32::GOLD)
+                ui.label("Decimal");
+                Self::f64_pin_info(false, !node.output_node_indices().is_empty())
             }
             NoiseNode::U32(_) => {
-                ui.label("u32");
-                PinInfo::square().with_fill(egui::Color32::GOLD)
+                ui.label("Integer");
+                Self::u32_pin_info(false, !node.output_node_indices().is_empty())
             }
         }
     }
@@ -2641,12 +2705,12 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             ui.close_menu();
         }
 
-        if ui.button("f64").clicked() {
+        if ui.button("Decimal").clicked() {
             snarl.insert_node(pos, NoiseNode::F64(Default::default()));
             ui.close_menu();
         }
 
-        if ui.button("u32").clicked() {
+        if ui.button("Integer").clicked() {
             snarl.insert_node(pos, NoiseNode::U32(Default::default()));
             ui.close_menu();
         }
