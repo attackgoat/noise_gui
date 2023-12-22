@@ -6,7 +6,10 @@ use {
         NoiseNode, ReturnType, RigidFractalNode, ScaleBiasNode, SelectNode, SourceType,
         TerraceNode, TransformNode, TurbulenceNode, UnaryNode, WorleyNode,
     },
-    egui::{epaint::PathShape, vec2, Color32, RichText, Shape, Stroke, Vec2},
+    egui::{
+        epaint::PathShape, vec2, Align, Color32, ComboBox, DragValue, Layout, Pos2, RichText,
+        Shape, Stroke, Style, TextEdit, Ui, Vec2,
+    },
     egui_snarl::{
         ui::{InPin, OutPin, PinInfo, SnarlViewer},
         Snarl,
@@ -24,7 +27,7 @@ impl<'a> Viewer<'a> {
     const AXES: [&'static str; 4] = ["X", "Y", "Z", "W"];
 
     fn control_point_pin_info(is_input: bool, filled: bool) -> PinInfo {
-        let fill = Color32::LIGHT_RED;
+        let fill = Color32::from_rgb(132, 80, 24);
 
         Self::scalar_pin_info(is_input, filled, fill)
     }
@@ -32,11 +35,11 @@ impl<'a> Viewer<'a> {
     // TODO: Make generic (see other combo box functions)
     fn distance_fn_combo_box(
         &mut self,
-        ui: &mut egui::Ui,
+        ui: &mut Ui,
         distance_fn: &mut DistanceFunction,
         node_idx: usize,
     ) {
-        egui::ComboBox::from_id_source(0)
+        ComboBox::from_id_source(0)
             .selected_text(format!("{distance_fn:?}"))
             .show_ui(ui, |ui| {
                 ui.style_mut().wrap = Some(false);
@@ -57,28 +60,55 @@ impl<'a> Viewer<'a> {
             });
     }
 
-    fn drag_value_f64(&mut self, ui: &mut egui::Ui, value: &mut f64, nodex_idx: usize) {
-        if ui
-            .add(
-                egui::DragValue::new(value)
-                    .min_decimals(2)
-                    .max_decimals(2)
-                    .speed(0.01),
-            )
-            .changed()
-        {
-            self.updated_node_indices.insert(nodex_idx);
-        }
+    fn drag_value_f64(&mut self, ui: &mut Ui, scale: f32, value: &mut f64, node_idx: usize) {
+        ui.with_layout(
+            Layout::right_to_left(Align::Min).with_cross_align(Align::Center),
+            |ui| {
+                ui.set_height(16.0 * scale);
+                if ui
+                    .add(
+                        DragValue::new(value)
+                            .min_decimals(2)
+                            .max_decimals(2)
+                            .speed(0.01),
+                    )
+                    .changed()
+                {
+                    self.updated_node_indices.insert(node_idx);
+                }
+            },
+        );
     }
 
-    fn drag_value_u32(&mut self, ui: &mut egui::Ui, value: &mut u32, node_idx: usize) {
-        if ui.add(egui::DragValue::new(value)).changed() {
-            self.updated_node_indices.insert(node_idx);
-        }
+    fn drag_value_octaves(&mut self, ui: &mut Ui, scale: f32, value: &mut u32, node_idx: usize) {
+        ui.with_layout(
+            Layout::right_to_left(Align::Min).with_cross_align(Align::Center),
+            |ui| {
+                ui.set_height(16.0 * scale);
+                if ui
+                    .add(DragValue::new(value).clamp_range(1..=FractalNode::MAX_OCTAVES))
+                    .changed()
+                {
+                    self.updated_node_indices.insert(node_idx);
+                }
+            },
+        );
+    }
+
+    fn drag_value_u32(&mut self, ui: &mut Ui, scale: f32, value: &mut u32, node_idx: usize) {
+        ui.with_layout(
+            Layout::right_to_left(Align::Min).with_cross_align(Align::Center),
+            |ui| {
+                ui.set_height(16.0 * scale);
+                if ui.add(DragValue::new(value)).changed() {
+                    self.updated_node_indices.insert(node_idx);
+                }
+            },
+        );
     }
 
     fn f64_pin_info(is_input: bool, filled: bool) -> PinInfo {
-        let fill = Color32::LIGHT_BLUE;
+        let fill = Color32::from_rgb(128, 64, 192);
 
         Self::scalar_pin_info(is_input, filled, fill)
     }
@@ -130,13 +160,8 @@ impl<'a> Viewer<'a> {
     }
 
     // TODO: Make generic (see other combo box functions)
-    fn return_ty_combo_box(
-        &mut self,
-        ui: &mut egui::Ui,
-        return_ty: &mut ReturnType,
-        node_idx: usize,
-    ) {
-        egui::ComboBox::from_id_source(1)
+    fn return_ty_combo_box(&mut self, ui: &mut Ui, return_ty: &mut ReturnType, node_idx: usize) {
+        ComboBox::from_id_source(1)
             .selected_text(format!("{return_ty:?}"))
             .show_ui(ui, |ui| {
                 ui.style_mut().wrap = Some(false);
@@ -153,8 +178,8 @@ impl<'a> Viewer<'a> {
     }
 
     // TODO: Make generic (see other combo box functions)
-    fn source_ty_combo_box(&mut self, ui: &mut egui::Ui, source: &mut SourceType, node_idx: usize) {
-        egui::ComboBox::from_id_source(0)
+    fn source_ty_combo_box(&mut self, ui: &mut Ui, source: &mut SourceType, node_idx: usize) {
+        ComboBox::from_id_source(0)
             .selected_text(format!("{source:?}"))
             .show_ui(ui, |ui| {
                 ui.style_mut().wrap = Some(false);
@@ -223,7 +248,7 @@ impl<'a> Viewer<'a> {
     }
 
     fn u32_pin_info(is_input: bool, filled: bool) -> PinInfo {
-        let fill = Color32::LIGHT_GREEN;
+        let fill = Color32::from_rgb(64, 192, 176);
 
         Self::scalar_pin_info(is_input, filled, fill)
     }
@@ -610,8 +635,8 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         node_idx: usize,
         _inputs: &[InPin],
         outputs: &[OutPin],
-        ui: &mut egui::Ui,
-        _scale: f32,
+        ui: &mut Ui,
+        scale: f32,
         snarl: &mut Snarl<NoiseNode>,
     ) {
         #[cfg(debug_assertions)]
@@ -619,138 +644,161 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
 
         let node = snarl.get_node_mut(node_idx);
 
-        match node {
-            NoiseNode::Abs(_) => {
-                ui.label("Abs");
-            }
-            NoiseNode::Add(_) => {
-                ui.label("Add");
-            }
-            NoiseNode::BasicMulti(node) => {
-                ui.label("Basic Multi");
-                self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
-            }
-            NoiseNode::Billow(node) => {
-                ui.label("Billow");
-                self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
-            }
-            NoiseNode::Blend(_) => {
-                ui.label("Blend");
-            }
-            NoiseNode::Checkerboard(_) => {
-                ui.label("Checkerboard");
-            }
-            NoiseNode::Clamp(_) => {
-                ui.label("Clamp");
-            }
-            NoiseNode::ControlPoint(_) => {
-                ui.label("Control Point");
-            }
-            NoiseNode::Curve(node) => {
-                ui.label("Curve");
+        ui.set_height(16.0 * scale);
+        ui.set_width(128.0 * scale);
+        ui.with_layout(
+            Layout::left_to_right(Align::Min).with_cross_align(Align::Center),
+            |ui| {
+                ui.add_space(20.0 * scale);
+                match node {
+                    NoiseNode::Abs(_) => {
+                        ui.label("Abs");
+                    }
+                    NoiseNode::Add(_) => {
+                        ui.label("Add");
+                    }
+                    NoiseNode::BasicMulti(node) => {
+                        ui.label("Basic Multi");
+                        self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
+                    }
+                    NoiseNode::Billow(node) => {
+                        ui.label("Billow");
+                        self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
+                    }
+                    NoiseNode::Blend(_) => {
+                        ui.label("Blend");
+                    }
+                    NoiseNode::Checkerboard(_) => {
+                        ui.label("Checkerboard");
+                    }
+                    NoiseNode::Clamp(_) => {
+                        ui.label("Clamp");
+                    }
+                    NoiseNode::ControlPoint(_) => {
+                        ui.label("Control Point");
+                    }
+                    NoiseNode::Curve(node) => {
+                        ui.label("Curve");
 
-                while let Some(None) = node.control_point_node_indices.last() {
-                    node.control_point_node_indices.pop();
-                }
-            }
-            NoiseNode::Cylinders(_) => {
-                ui.label("Cylinders");
-            }
-            NoiseNode::Displace(_) => {
-                ui.label("Displace");
-            }
-            NoiseNode::Exponent(_) => {
-                ui.label("Exponent");
-            }
-            NoiseNode::F64(node) => {
-                ui.add(egui::TextEdit::singleline(&mut node.name).desired_width(50.0));
-                self.drag_value_f64(ui, &mut node.value, node_idx);
-            }
-            NoiseNode::Fbm(node) => {
-                ui.label("fBm");
-                self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
-            }
-            NoiseNode::HybridMulti(node) => {
-                ui.label("Hybrid Multi");
-                self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
-            }
-            NoiseNode::Min(_) => {
-                ui.label("Min");
-            }
-            NoiseNode::Max(_) => {
-                ui.label("Max");
-            }
-            NoiseNode::Multiply(_) => {
-                ui.label("Multiply");
-            }
-            NoiseNode::Negate(_) => {
-                ui.label("Negate");
-            }
-            NoiseNode::OpenSimplex(_) => {
-                ui.label("Open Simplex");
-            }
-            NoiseNode::Perlin(_) => {
-                ui.label("Perlin");
-            }
-            NoiseNode::PerlinSurflet(_) => {
-                ui.label("Perlin Surflet");
-            }
-            NoiseNode::Power(_) => {
-                ui.label("Power");
-            }
-            NoiseNode::RigidMulti(node) => {
-                ui.label("Rigid Multi");
-                self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
-            }
-            NoiseNode::RotatePoint(_) => {
-                ui.label("Rotate Point");
-            }
-            NoiseNode::ScaleBias(_) => {
-                ui.label("Scale + Bias");
-            }
-            NoiseNode::ScalePoint(_) => {
-                ui.label("Scale Point");
-            }
-            NoiseNode::Select(_) => {
-                ui.label("Select");
-            }
-            NoiseNode::Simplex(_) => {
-                ui.label("Simplex");
-            }
-            NoiseNode::SuperSimplex(_) => {
-                ui.label("Super Simplex");
-            }
-            NoiseNode::Terrace(node) => {
-                ui.label("Terrace");
-                if ui.checkbox(&mut node.inverted, "Inverted").changed() {
-                    self.updated_node_indices.insert(node_idx);
-                }
+                        while let Some(None) = node.control_point_node_indices.last() {
+                            node.control_point_node_indices.pop();
+                        }
+                    }
+                    NoiseNode::Cylinders(_) => {
+                        ui.label("Cylinders");
+                    }
+                    NoiseNode::Displace(_) => {
+                        ui.label("Displace");
+                    }
+                    NoiseNode::Exponent(_) => {
+                        ui.label("Exponent");
+                    }
+                    NoiseNode::F64(node) => {
+                        ui.label("Decimal");
+                        ui.add(TextEdit::singleline(&mut node.name).desired_width(50.0 * scale));
 
-                while let Some(None) = node.control_point_node_indices.last() {
-                    node.control_point_node_indices.pop();
-                }
-            }
-            NoiseNode::TranslatePoint(_) => {
-                ui.label("Translate Point");
-            }
-            NoiseNode::Turbulence(node) => {
-                ui.label("Turbulence");
-                self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
-            }
-            NoiseNode::U32(node) => {
-                ui.add(egui::TextEdit::singleline(&mut node.name).desired_width(50.0));
-                self.drag_value_u32(ui, &mut node.value, node_idx);
-            }
-            NoiseNode::Value(_) => {
-                ui.label("Value");
-            }
-            NoiseNode::Worley(node) => {
-                ui.label("Worley");
-                self.distance_fn_combo_box(ui, &mut node.distance_fn, node_idx);
-                self.return_ty_combo_box(ui, &mut node.return_ty, node_idx);
-            }
-        }
+                        if ui
+                            .add(
+                                DragValue::new(&mut node.value)
+                                    .min_decimals(2)
+                                    .max_decimals(2)
+                                    .speed(0.01),
+                            )
+                            .changed()
+                        {
+                            self.updated_node_indices.insert(node_idx);
+                        }
+                    }
+                    NoiseNode::Fbm(node) => {
+                        ui.label("fBm");
+                        self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
+                    }
+                    NoiseNode::HybridMulti(node) => {
+                        ui.label("Hybrid Multi");
+                        self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
+                    }
+                    NoiseNode::Min(_) => {
+                        ui.label("Min");
+                    }
+                    NoiseNode::Max(_) => {
+                        ui.label("Max");
+                    }
+                    NoiseNode::Multiply(_) => {
+                        ui.label("Multiply");
+                    }
+                    NoiseNode::Negate(_) => {
+                        ui.label("Negate");
+                    }
+                    NoiseNode::OpenSimplex(_) => {
+                        ui.label("Open Simplex");
+                    }
+                    NoiseNode::Perlin(_) => {
+                        ui.label("Perlin");
+                    }
+                    NoiseNode::PerlinSurflet(_) => {
+                        ui.label("Perlin Surflet");
+                    }
+                    NoiseNode::Power(_) => {
+                        ui.label("Power");
+                    }
+                    NoiseNode::RigidMulti(node) => {
+                        ui.label("Rigid Multi");
+                        self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
+                    }
+                    NoiseNode::RotatePoint(_) => {
+                        ui.label("Rotate Point");
+                    }
+                    NoiseNode::ScaleBias(_) => {
+                        ui.label("Scale + Bias");
+                    }
+                    NoiseNode::ScalePoint(_) => {
+                        ui.label("Scale Point");
+                    }
+                    NoiseNode::Select(_) => {
+                        ui.label("Select");
+                    }
+                    NoiseNode::Simplex(_) => {
+                        ui.label("Simplex");
+                    }
+                    NoiseNode::SuperSimplex(_) => {
+                        ui.label("Super Simplex");
+                    }
+                    NoiseNode::Terrace(node) => {
+                        ui.label("Terrace");
+                        if ui.checkbox(&mut node.inverted, "Inverted").changed() {
+                            self.updated_node_indices.insert(node_idx);
+                        }
 
+                        while let Some(None) = node.control_point_node_indices.last() {
+                            node.control_point_node_indices.pop();
+                        }
+                    }
+                    NoiseNode::TranslatePoint(_) => {
+                        ui.label("Translate Point");
+                    }
+                    NoiseNode::Turbulence(node) => {
+                        ui.label("Turbulence");
+                        self.source_ty_combo_box(ui, &mut node.source_ty, node_idx);
+                    }
+                    NoiseNode::U32(node) => {
+                        ui.label("Integer");
+                        ui.add(TextEdit::singleline(&mut node.name).desired_width(50.0 * scale));
+
+                        if ui.add(DragValue::new(&mut node.value)).changed() {
+                            self.updated_node_indices.insert(node_idx);
+                        }
+                    }
+                    NoiseNode::Value(_) => {
+                        ui.label("Value");
+                    }
+                    NoiseNode::Worley(node) => {
+                        ui.label("Worley");
+                        self.distance_fn_combo_box(ui, &mut node.distance_fn, node_idx);
+                        self.return_ty_combo_box(ui, &mut node.return_ty, node_idx);
+                    }
+                }
+            },
+        );
         let output_node_indices = node.output_node_indices_mut();
         if outputs.len() != output_node_indices.len() {
             output_node_indices.clear();
@@ -815,8 +863,8 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
     fn show_input(
         &mut self,
         pin: &InPin,
-        ui: &mut egui::Ui,
-        _scale: f32,
+        ui: &mut Ui,
+        scale: f32,
         snarl: &mut Snarl<NoiseNode>,
     ) -> PinInfo {
         // Handle disconnections by resetting node pins to the value of the previous node
@@ -1747,654 +1795,714 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             }
         }
 
-        match (pin.id.input, snarl.get_node_mut(pin.id.node)) {
-            (
-                0,
-                NoiseNode::Abs(UnaryNode { input_node_idx, .. })
-                | NoiseNode::Clamp(ClampNode { input_node_idx, .. })
-                | NoiseNode::Curve(CurveNode { input_node_idx, .. })
-                | NoiseNode::Displace(DisplaceNode { input_node_idx, .. })
-                | NoiseNode::Exponent(ExponentNode { input_node_idx, .. })
-                | NoiseNode::Negate(UnaryNode { input_node_idx, .. })
-                | NoiseNode::RotatePoint(TransformNode { input_node_idx, .. })
-                | NoiseNode::ScaleBias(ScaleBiasNode { input_node_idx, .. })
-                | NoiseNode::ScalePoint(TransformNode { input_node_idx, .. })
-                | NoiseNode::Terrace(TerraceNode { input_node_idx, .. })
-                | NoiseNode::TranslatePoint(TransformNode { input_node_idx, .. })
-                | NoiseNode::Turbulence(TurbulenceNode { input_node_idx, .. }),
-            ) => {
-                ui.label("Source");
+        ui.set_height(16.0 * scale);
+        ui.set_width(128.0 * scale);
+        ui.with_layout(
+            Layout::left_to_right(Align::Min).with_cross_align(Align::Center),
+            |ui| {
+                ui.add_space(20.0 * scale);
+                match (pin.id.input, snarl.get_node_mut(pin.id.node)) {
+                    (
+                        0,
+                        NoiseNode::Abs(UnaryNode { input_node_idx, .. })
+                        | NoiseNode::Clamp(ClampNode { input_node_idx, .. })
+                        | NoiseNode::Curve(CurveNode { input_node_idx, .. })
+                        | NoiseNode::Displace(DisplaceNode { input_node_idx, .. })
+                        | NoiseNode::Exponent(ExponentNode { input_node_idx, .. })
+                        | NoiseNode::Negate(UnaryNode { input_node_idx, .. })
+                        | NoiseNode::RotatePoint(TransformNode { input_node_idx, .. })
+                        | NoiseNode::ScaleBias(ScaleBiasNode { input_node_idx, .. })
+                        | NoiseNode::ScalePoint(TransformNode { input_node_idx, .. })
+                        | NoiseNode::Terrace(TerraceNode { input_node_idx, .. })
+                        | NoiseNode::TranslatePoint(TransformNode { input_node_idx, .. })
+                        | NoiseNode::Turbulence(TurbulenceNode { input_node_idx, .. }),
+                    ) => {
+                        ui.label("Source");
 
-                #[cfg(debug_assertions)]
-                ui.label(
-                    RichText::new(format!("#{:?}", input_node_idx)).color(Color32::DEBUG_COLOR),
-                );
+                        #[cfg(debug_assertions)]
+                        ui.label(
+                            RichText::new(format!("#{:?}", input_node_idx))
+                                .color(Color32::DEBUG_COLOR),
+                        );
 
-                Self::image_pin_info(true, input_node_idx.is_some())
-            }
-            (
-                0,
-                NoiseNode::BasicMulti(FractalNode { seed, .. })
-                | NoiseNode::Billow(FractalNode { seed, .. })
-                | NoiseNode::Fbm(FractalNode { seed, .. })
-                | NoiseNode::HybridMulti(FractalNode { seed, .. })
-                | NoiseNode::OpenSimplex(GeneratorNode { seed, .. })
-                | NoiseNode::Perlin(GeneratorNode { seed, .. })
-                | NoiseNode::PerlinSurflet(GeneratorNode { seed, .. })
-                | NoiseNode::RigidMulti(RigidFractalNode { seed, .. })
-                | NoiseNode::Simplex(GeneratorNode { seed, .. })
-                | NoiseNode::SuperSimplex(GeneratorNode { seed, .. })
-                | NoiseNode::Value(GeneratorNode { seed, .. })
-                | NoiseNode::Worley(WorleyNode { seed, .. }),
-            ) => {
-                ui.label("Seed");
-
-                if let Some(value) = seed.as_value_mut() {
-                    self.drag_value_u32(ui, value, pin.id.node);
-
-                    Self::u32_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", seed.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::u32_pin_info(true, true)
-                }
-            }
-            (0, NoiseNode::Checkerboard(CheckerboardNode { size, .. })) => {
-                ui.label("Size");
-
-                if let Some(value) = size.as_value_mut() {
-                    self.drag_value_u32(ui, value, pin.id.node);
-
-                    Self::u32_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", size.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::u32_pin_info(true, true)
-                }
-            }
-            (0, NoiseNode::ControlPoint(node)) => {
-                ui.label("Input");
-
-                if let Some(value) = node.input.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.input.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (0, NoiseNode::Cylinders(node)) => {
-                ui.label("Frequency");
-
-                if let Some(value) = node.frequency.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.frequency.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (
-                0 | 1,
-                NoiseNode::Add(node)
-                | NoiseNode::Min(node)
-                | NoiseNode::Max(node)
-                | NoiseNode::Multiply(node)
-                | NoiseNode::Power(node),
-            ) => {
-                ui.label("Source");
-
-                #[cfg(debug_assertions)]
-                ui.label(
-                    RichText::new(format!("#{:?}", node.input_node_indices[pin.id.input]))
-                        .color(Color32::DEBUG_COLOR),
-                );
-
-                Self::image_pin_info(true, node.input_node_indices[pin.id.input].is_some())
-            }
-            (
-                0 | 1,
-                NoiseNode::Blend(BlendNode {
-                    input_node_indices, ..
-                })
-                | NoiseNode::Select(SelectNode {
-                    input_node_indices, ..
-                }),
-            ) => {
-                ui.label("Source");
-
-                #[cfg(debug_assertions)]
-                ui.label(
-                    RichText::new(format!("#{:?}", input_node_indices[pin.id.input]))
-                        .color(Color32::DEBUG_COLOR),
-                );
-
-                Self::image_pin_info(true, input_node_indices[pin.id.input].is_some())
-            }
-            (1, NoiseNode::ControlPoint(node)) => {
-                ui.label("Output");
-
-                if let Some(value) = node.output.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.output.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (
-                1,
-                NoiseNode::BasicMulti(FractalNode { octaves, .. })
-                | NoiseNode::Billow(FractalNode { octaves, .. })
-                | NoiseNode::Fbm(FractalNode { octaves, .. })
-                | NoiseNode::HybridMulti(FractalNode { octaves, .. })
-                | NoiseNode::RigidMulti(RigidFractalNode { octaves, .. }),
-            ) => {
-                ui.label("Octaves");
-
-                if let Some(value) = octaves.as_value_mut() {
-                    if ui
-                        .add(egui::DragValue::new(value).clamp_range(1..=FractalNode::MAX_OCTAVES))
-                        .changed()
-                    {
-                        self.updated_node_indices.insert(pin.id.node);
+                        Self::image_pin_info(true, input_node_idx.is_some())
                     }
+                    (
+                        0,
+                        NoiseNode::BasicMulti(FractalNode { seed, .. })
+                        | NoiseNode::Billow(FractalNode { seed, .. })
+                        | NoiseNode::Fbm(FractalNode { seed, .. })
+                        | NoiseNode::HybridMulti(FractalNode { seed, .. })
+                        | NoiseNode::OpenSimplex(GeneratorNode { seed, .. })
+                        | NoiseNode::Perlin(GeneratorNode { seed, .. })
+                        | NoiseNode::PerlinSurflet(GeneratorNode { seed, .. })
+                        | NoiseNode::RigidMulti(RigidFractalNode { seed, .. })
+                        | NoiseNode::Simplex(GeneratorNode { seed, .. })
+                        | NoiseNode::SuperSimplex(GeneratorNode { seed, .. })
+                        | NoiseNode::Value(GeneratorNode { seed, .. })
+                        | NoiseNode::Worley(WorleyNode { seed, .. }),
+                    ) => {
+                        ui.label("Seed");
 
-                    Self::u32_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", octaves.as_node_index().unwrap()))
+                        if let Some(value) = seed.as_value_mut() {
+                            self.drag_value_u32(ui, scale, value, pin.id.node);
+
+                            Self::u32_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!("#{:?}", seed.as_node_index().unwrap()))
+                                    .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::u32_pin_info(true, true)
+                        }
+                    }
+                    (0, NoiseNode::Checkerboard(CheckerboardNode { size, .. })) => {
+                        ui.label("Size");
+
+                        if let Some(value) = size.as_value_mut() {
+                            self.drag_value_u32(ui, scale, value, pin.id.node);
+
+                            Self::u32_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!("#{:?}", size.as_node_index().unwrap()))
+                                    .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::u32_pin_info(true, true)
+                        }
+                    }
+                    (0, NoiseNode::ControlPoint(node)) => {
+                        ui.label("Input");
+
+                        if let Some(value) = node.input.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.input.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (0, NoiseNode::Cylinders(node)) => {
+                        ui.label("Frequency");
+
+                        if let Some(value) = node.frequency.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.frequency.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        0 | 1,
+                        NoiseNode::Add(node)
+                        | NoiseNode::Min(node)
+                        | NoiseNode::Max(node)
+                        | NoiseNode::Multiply(node)
+                        | NoiseNode::Power(node),
+                    ) => {
+                        ui.label("Source");
+
+                        #[cfg(debug_assertions)]
+                        ui.label(
+                            RichText::new(format!("#{:?}", node.input_node_indices[pin.id.input]))
+                                .color(Color32::DEBUG_COLOR),
+                        );
+
+                        Self::image_pin_info(true, node.input_node_indices[pin.id.input].is_some())
+                    }
+                    (
+                        0 | 1,
+                        NoiseNode::Blend(BlendNode {
+                            input_node_indices, ..
+                        })
+                        | NoiseNode::Select(SelectNode {
+                            input_node_indices, ..
+                        }),
+                    ) => {
+                        ui.label("Source");
+
+                        #[cfg(debug_assertions)]
+                        ui.label(
+                            RichText::new(format!("#{:?}", input_node_indices[pin.id.input]))
+                                .color(Color32::DEBUG_COLOR),
+                        );
+
+                        Self::image_pin_info(true, input_node_indices[pin.id.input].is_some())
+                    }
+                    (1, NoiseNode::ControlPoint(node)) => {
+                        ui.label("Output");
+
+                        if let Some(value) = node.output.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.output.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        1,
+                        NoiseNode::BasicMulti(FractalNode { octaves, .. })
+                        | NoiseNode::Billow(FractalNode { octaves, .. })
+                        | NoiseNode::Fbm(FractalNode { octaves, .. })
+                        | NoiseNode::HybridMulti(FractalNode { octaves, .. })
+                        | NoiseNode::RigidMulti(RigidFractalNode { octaves, .. }),
+                    ) => {
+                        ui.label("Octaves");
+
+                        if let Some(value) = octaves.as_value_mut() {
+                            self.drag_value_octaves(ui, scale, value, pin.id.node);
+
+                            Self::u32_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!("#{:?}", octaves.as_node_index().unwrap()))
+                                    .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::u32_pin_info(true, true)
+                        }
+                    }
+                    (1, NoiseNode::Clamp(node)) => {
+                        ui.label("Lower Bound");
+
+                        if let Some(value) = node.lower_bound.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.lower_bound.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (1, NoiseNode::Exponent(node)) => {
+                        ui.label("Exponent");
+
+                        if let Some(value) = node.exponent.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.exponent.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (1, NoiseNode::Turbulence(node)) => {
+                        ui.label("Seed");
+
+                        if let Some(value) = node.seed.as_value_mut() {
+                            self.drag_value_u32(ui, scale, value, pin.id.node);
+
+                            Self::u32_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!("#{:?}", node.seed.as_node_index().unwrap()))
+                                    .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::u32_pin_info(true, true)
+                        }
+                    }
+                    (1..=4, NoiseNode::Displace(node)) => {
+                        ui.label(Self::AXES[pin.id.input - 1]);
+
+                        if node.axes[pin.id.input - 1].is_none() {
+                            Self::image_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.axes[pin.id.input - 1].unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::image_pin_info(true, true)
+                        }
+                    }
+                    (
+                        1..=4,
+                        NoiseNode::RotatePoint(node)
+                        | NoiseNode::ScalePoint(node)
+                        | NoiseNode::TranslatePoint(node),
+                    ) => {
+                        ui.label(Self::AXES[pin.id.input - 1]);
+
+                        if let Some(value) = node.axes[pin.id.input - 1].as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.axes[pin.id.input - 1].as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (1, NoiseNode::ScaleBias(node)) => {
+                        ui.label("Scale");
+
+                        if let Some(value) = node.scale.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.scale.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (1, NoiseNode::Worley(node)) => {
+                        ui.label("Frequency");
+
+                        if let Some(value) = node.frequency.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.frequency.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        2,
+                        NoiseNode::BasicMulti(FractalNode { frequency, .. })
+                        | NoiseNode::Billow(FractalNode { frequency, .. })
+                        | NoiseNode::Fbm(FractalNode { frequency, .. })
+                        | NoiseNode::HybridMulti(FractalNode { frequency, .. })
+                        | NoiseNode::RigidMulti(RigidFractalNode { frequency, .. }),
+                    ) => {
+                        ui.label("Frequency");
+
+                        if let Some(value) = frequency.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!("#{:?}", frequency.as_node_index().unwrap()))
+                                    .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        2,
+                        NoiseNode::Blend(BlendNode {
+                            control_node_idx, ..
+                        })
+                        | NoiseNode::Select(SelectNode {
+                            control_node_idx, ..
+                        }),
+                    ) => {
+                        ui.label("Control");
+
+                        #[cfg(debug_assertions)]
+                        ui.label(
+                            RichText::new(format!("#{:?}", control_node_idx))
+                                .color(Color32::DEBUG_COLOR),
+                        );
+
+                        Self::image_pin_info(true, control_node_idx.is_some())
+                    }
+                    (2, NoiseNode::Clamp(node)) => {
+                        ui.label("Upper Bound");
+
+                        if let Some(value) = node.upper_bound.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.upper_bound.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (2, NoiseNode::ScaleBias(node)) => {
+                        ui.label("Bias");
+
+                        if let Some(value) = node.bias.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!("#{:?}", node.bias.as_node_index().unwrap()))
+                                    .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (2, NoiseNode::Turbulence(node)) => {
+                        ui.label("Frequency");
+
+                        if let Some(value) = node.frequency.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.frequency.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        3,
+                        NoiseNode::BasicMulti(FractalNode { lacunarity, .. })
+                        | NoiseNode::Billow(FractalNode { lacunarity, .. })
+                        | NoiseNode::Fbm(FractalNode { lacunarity, .. })
+                        | NoiseNode::HybridMulti(FractalNode { lacunarity, .. })
+                        | NoiseNode::RigidMulti(RigidFractalNode { lacunarity, .. }),
+                    ) => {
+                        ui.label("Lacunarity");
+
+                        if let Some(value) = lacunarity.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    lacunarity.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (3, NoiseNode::Select(node)) => {
+                        ui.label("Lower Bound");
+
+                        if let Some(value) = node.lower_bound.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.lower_bound.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (3, NoiseNode::Turbulence(node)) => {
+                        ui.label("Power");
+
+                        if let Some(value) = node.power.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.power.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        4,
+                        NoiseNode::BasicMulti(FractalNode { persistence, .. })
+                        | NoiseNode::Billow(FractalNode { persistence, .. })
+                        | NoiseNode::Fbm(FractalNode { persistence, .. })
+                        | NoiseNode::HybridMulti(FractalNode { persistence, .. })
+                        | NoiseNode::RigidMulti(RigidFractalNode { persistence, .. }),
+                    ) => {
+                        ui.label("Persistence");
+
+                        if let Some(value) = persistence.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    persistence.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (4, NoiseNode::Select(node)) => {
+                        ui.label("Upper Bound");
+
+                        if let Some(value) = node.upper_bound.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.upper_bound.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (4, NoiseNode::Turbulence(node)) => {
+                        ui.label("Roughness");
+
+                        if let Some(value) = node.roughness.as_value_mut() {
+                            self.drag_value_u32(ui, scale, value, pin.id.node);
+
+                            Self::u32_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.roughness.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::u32_pin_info(true, true)
+                        }
+                    }
+                    (5, NoiseNode::RigidMulti(node)) => {
+                        ui.label("Attenuation");
+
+                        if let Some(value) = node.attenuation.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.attenuation.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (5, NoiseNode::Select(node)) => {
+                        ui.label("Falloff");
+
+                        if let Some(value) = node.falloff.as_value_mut() {
+                            self.drag_value_f64(ui, scale, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.falloff.as_node_index().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (control_point_idx, NoiseNode::Curve(node)) => {
+                        ui.label("Control Point");
+
+                        let control_point_idx = control_point_idx - 1;
+
+                        #[cfg(debug_assertions)]
+                        ui.label(
+                            RichText::new(format!(
+                                "#{:?}",
+                                node.control_point_node_indices
+                                    .get(control_point_idx)
+                                    .copied()
+                            ))
                             .color(Color32::DEBUG_COLOR),
-                    );
+                        );
 
-                    Self::u32_pin_info(true, true)
-                }
-            }
-            (1, NoiseNode::Clamp(node)) => {
-                ui.label("Lower Bound");
-
-                if let Some(value) = node.lower_bound.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.lower_bound.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (1, NoiseNode::Exponent(node)) => {
-                ui.label("Exponent");
-
-                if let Some(value) = node.exponent.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.exponent.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (1, NoiseNode::Turbulence(node)) => {
-                ui.label("Seed");
-
-                if let Some(value) = node.seed.as_value_mut() {
-                    self.drag_value_u32(ui, value, pin.id.node);
-
-                    Self::u32_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.seed.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::u32_pin_info(true, true)
-                }
-            }
-            (1..=4, NoiseNode::Displace(node)) => {
-                ui.label(Self::AXES[pin.id.input - 1]);
-
-                if node.axes[pin.id.input - 1].is_none() {
-                    Self::image_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.axes[pin.id.input - 1].unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::image_pin_info(true, true)
-                }
-            }
-            (
-                1..=4,
-                NoiseNode::RotatePoint(node)
-                | NoiseNode::ScalePoint(node)
-                | NoiseNode::TranslatePoint(node),
-            ) => {
-                ui.label(Self::AXES[pin.id.input - 1]);
-
-                if let Some(value) = node.axes[pin.id.input - 1].as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!(
-                            "#{:?}",
-                            node.axes[pin.id.input - 1].as_node_index().unwrap()
-                        ))
-                        .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (1, NoiseNode::ScaleBias(node)) => {
-                ui.label("Scale");
-
-                if let Some(value) = node.scale.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.scale.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (1, NoiseNode::Worley(node)) => {
-                ui.label("Frequency");
-
-                if let Some(value) = node.frequency.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.frequency.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (
-                2,
-                NoiseNode::BasicMulti(FractalNode { frequency, .. })
-                | NoiseNode::Billow(FractalNode { frequency, .. })
-                | NoiseNode::Fbm(FractalNode { frequency, .. })
-                | NoiseNode::HybridMulti(FractalNode { frequency, .. })
-                | NoiseNode::RigidMulti(RigidFractalNode { frequency, .. }),
-            ) => {
-                ui.label("Frequency");
-
-                if let Some(value) = frequency.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", frequency.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (
-                2,
-                NoiseNode::Blend(BlendNode {
-                    control_node_idx, ..
-                })
-                | NoiseNode::Select(SelectNode {
-                    control_node_idx, ..
-                }),
-            ) => {
-                ui.label("Control");
-
-                #[cfg(debug_assertions)]
-                ui.label(
-                    RichText::new(format!("#{:?}", control_node_idx)).color(Color32::DEBUG_COLOR),
-                );
-
-                Self::image_pin_info(true, control_node_idx.is_some())
-            }
-            (2, NoiseNode::Clamp(node)) => {
-                ui.label("Upper Bound");
-
-                if let Some(value) = node.upper_bound.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.upper_bound.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (2, NoiseNode::ScaleBias(node)) => {
-                ui.label("Bias");
-
-                if let Some(value) = node.bias.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.bias.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (2, NoiseNode::Turbulence(node)) => {
-                ui.label("Frequency");
-
-                if let Some(value) = node.frequency.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.frequency.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (
-                3,
-                NoiseNode::BasicMulti(FractalNode { lacunarity, .. })
-                | NoiseNode::Billow(FractalNode { lacunarity, .. })
-                | NoiseNode::Fbm(FractalNode { lacunarity, .. })
-                | NoiseNode::HybridMulti(FractalNode { lacunarity, .. })
-                | NoiseNode::RigidMulti(RigidFractalNode { lacunarity, .. }),
-            ) => {
-                ui.label("Lacunarity");
-
-                if let Some(value) = lacunarity.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", lacunarity.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (3, NoiseNode::Select(node)) => {
-                ui.label("Lower Bound");
-
-                if let Some(value) = node.lower_bound.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.lower_bound.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (3, NoiseNode::Turbulence(node)) => {
-                ui.label("Power");
-
-                if let Some(value) = node.power.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.power.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (
-                4,
-                NoiseNode::BasicMulti(FractalNode { persistence, .. })
-                | NoiseNode::Billow(FractalNode { persistence, .. })
-                | NoiseNode::Fbm(FractalNode { persistence, .. })
-                | NoiseNode::HybridMulti(FractalNode { persistence, .. })
-                | NoiseNode::RigidMulti(RigidFractalNode { persistence, .. }),
-            ) => {
-                ui.label("Persistence");
-
-                if let Some(value) = persistence.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", persistence.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (4, NoiseNode::Select(node)) => {
-                ui.label("Upper Bound");
-
-                if let Some(value) = node.upper_bound.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.upper_bound.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (4, NoiseNode::Turbulence(node)) => {
-                ui.label("Roughness");
-
-                if let Some(value) = node.roughness.as_value_mut() {
-                    self.drag_value_u32(ui, value, pin.id.node);
-
-                    Self::u32_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.roughness.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::u32_pin_info(true, true)
-                }
-            }
-            (5, NoiseNode::RigidMulti(node)) => {
-                ui.label("Attenuation");
-
-                if let Some(value) = node.attenuation.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.attenuation.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (5, NoiseNode::Select(node)) => {
-                ui.label("Falloff");
-
-                if let Some(value) = node.falloff.as_value_mut() {
-                    self.drag_value_f64(ui, value, pin.id.node);
-
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!("#{:?}", node.falloff.as_node_index().unwrap()))
-                            .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
-                }
-            }
-            (control_point_idx, NoiseNode::Curve(node)) => {
-                ui.label("Control Point");
-
-                let control_point_idx = control_point_idx - 1;
-
-                #[cfg(debug_assertions)]
-                ui.label(
-                    RichText::new(format!(
-                        "#{:?}",
-                        node.control_point_node_indices
+                        if node
+                            .control_point_node_indices
                             .get(control_point_idx)
                             .copied()
-                    ))
-                    .color(Color32::DEBUG_COLOR),
-                );
+                            .flatten()
+                            .is_none()
+                        {
+                            Self::control_point_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.control_point_node_indices
+                                        .get(control_point_idx)
+                                        .copied()
+                                        .flatten()
+                                        .unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
 
-                if node
-                    .control_point_node_indices
-                    .get(control_point_idx)
-                    .copied()
-                    .flatten()
-                    .is_none()
-                {
-                    Self::control_point_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!(
-                            "#{:?}",
-                            node.control_point_node_indices
-                                .get(control_point_idx)
-                                .copied()
-                                .flatten()
-                                .unwrap()
-                        ))
-                        .color(Color32::DEBUG_COLOR),
-                    );
+                            Self::control_point_pin_info(true, true)
+                        }
+                    }
+                    (control_point_idx, NoiseNode::Terrace(node)) => {
+                        ui.label("Decimal");
 
-                    Self::control_point_pin_info(true, true)
-                }
-            }
-            (control_point_idx, NoiseNode::Terrace(node)) => {
-                ui.label("Decimal");
+                        let control_point_idx = control_point_idx - 1;
 
-                let control_point_idx = control_point_idx - 1;
+                        #[cfg(debug_assertions)]
+                        ui.label(
+                            RichText::new(format!(
+                                "#{:?}",
+                                node.control_point_node_indices
+                                    .get(control_point_idx)
+                                    .copied()
+                            ))
+                            .color(Color32::DEBUG_COLOR),
+                        );
 
-                #[cfg(debug_assertions)]
-                ui.label(
-                    RichText::new(format!(
-                        "#{:?}",
-                        node.control_point_node_indices
+                        if node
+                            .control_point_node_indices
                             .get(control_point_idx)
                             .copied()
-                    ))
-                    .color(Color32::DEBUG_COLOR),
-                );
+                            .flatten()
+                            .is_none()
+                        {
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    node.control_point_node_indices
+                                        .get(control_point_idx)
+                                        .copied()
+                                        .flatten()
+                                        .unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
 
-                if node
-                    .control_point_node_indices
-                    .get(control_point_idx)
-                    .copied()
-                    .flatten()
-                    .is_none()
-                {
-                    Self::f64_pin_info(true, false)
-                } else {
-                    #[cfg(debug_assertions)]
-                    ui.label(
-                        RichText::new(format!(
-                            "#{:?}",
-                            node.control_point_node_indices
-                                .get(control_point_idx)
-                                .copied()
-                                .flatten()
-                                .unwrap()
-                        ))
-                        .color(Color32::DEBUG_COLOR),
-                    );
-
-                    Self::f64_pin_info(true, true)
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    _ => unreachable!(),
                 }
-            }
-            _ => unreachable!(),
-        }
+            },
+        )
+        .inner
     }
 
     fn show_output(
         &mut self,
         pin: &OutPin,
-        ui: &mut egui::Ui,
+        ui: &mut Ui,
         scale: f32,
         snarl: &mut Snarl<NoiseNode>,
     ) -> PinInfo {
@@ -2443,42 +2551,30 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             NoiseNode::ControlPoint(_) => {
                 Self::control_point_pin_info(false, !node.output_node_indices().is_empty())
             }
-            NoiseNode::F64(_) => {
-                ui.label("Decimal");
-                Self::f64_pin_info(false, !node.output_node_indices().is_empty())
-            }
-            NoiseNode::U32(_) => {
-                ui.label("Integer");
-                Self::u32_pin_info(false, !node.output_node_indices().is_empty())
-            }
+            NoiseNode::F64(_) => Self::f64_pin_info(false, !node.output_node_indices().is_empty()),
+            NoiseNode::U32(_) => Self::u32_pin_info(false, !node.output_node_indices().is_empty()),
         }
     }
 
     fn input_color(
         &mut self,
         _pin: &InPin,
-        _style: &egui::Style,
+        _style: &Style,
         _snarl: &mut Snarl<NoiseNode>,
-    ) -> egui::Color32 {
+    ) -> Color32 {
         unimplemented!()
     }
 
     fn output_color(
         &mut self,
         _pin: &OutPin,
-        _style: &egui::Style,
+        _style: &Style,
         _snarl: &mut Snarl<NoiseNode>,
-    ) -> egui::Color32 {
+    ) -> Color32 {
         unimplemented!()
     }
 
-    fn graph_menu(
-        &mut self,
-        pos: egui::Pos2,
-        ui: &mut egui::Ui,
-        _scale: f32,
-        snarl: &mut Snarl<NoiseNode>,
-    ) {
+    fn graph_menu(&mut self, pos: Pos2, ui: &mut Ui, _scale: f32, snarl: &mut Snarl<NoiseNode>) {
         ui.label("Add node");
 
         ui.separator();
@@ -2721,7 +2817,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         node_idx: usize,
         inputs: &[InPin],
         outputs: &[OutPin],
-        ui: &mut egui::Ui,
+        ui: &mut Ui,
         _scale: f32,
         snarl: &mut Snarl<NoiseNode>,
     ) {

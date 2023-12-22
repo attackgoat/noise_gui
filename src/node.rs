@@ -126,7 +126,7 @@ where
 {
     fn default() -> Self {
         Self {
-            name: "value".to_owned(),
+            name: "name".to_owned(),
             output_node_indices: Default::default(),
             value: Default::default(),
         }
@@ -363,14 +363,6 @@ impl<T> NodeValue<T> {
             None
         }
     }
-
-    // pub fn as_value(&self) -> Option<&T> {
-    //     if let Self::Value(value) = self {
-    //         Some(value)
-    //     } else {
-    //         None
-    //     }
-    // }
 
     pub fn as_value_mut(&mut self) -> Option<&mut T> {
         if let Self::Value(value) = self {
