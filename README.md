@@ -1,17 +1,46 @@
 # `noise_gui`
 
+[![GitHub](https://img.shields.io/badge/github-attackgoat/noise__gui-blue?logo=github)](https://github.com/attackgoat/noise_gui)
+[![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/attackgoat/noise_gui/blob/master/LICENSE-MIT)
+[![Apache](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/attackgoat/noise_gui/blob/master/LICENSE-APACHE)
+[![GitHub Pages](https://img.shields.io/github/actions/workflow/status/attackgoat/noise_gui/main.yml)](https://github.com/attackgoat/noise_gui/actions/workflows/main.yml)
+
+---
+
 A graphical user interface for [Noise-rs](https://github.com/Razaekel/noise-rs).
 
-TODO:
+> [!TIP]
+> `noise_gui` runs on Linux/Mac/Windows desktops and [**the web**](https://attackgoat.github.io/noise_gui/)!
 
-- [x] Add node implementations for each `NoiseFn`
+![Demo](.github/img/demo.gif "Demo")
+
+## Features:
+
+- [x] Support for all [Noise-rs](https://github.com/Razaekel/noise-rs) `NoiseFn` implementations
+- [ ] Allow zoom/pan on preview images
 - [ ] Allow saving the graph project to a file
-- [ ] Allow zoom/pan on the noise preview images
 - [ ] Allow image/data export
-- [ ] Warning when noise nodes won't render (not enough control points, etc: see expr.rs)
-- [x] Support wasm with online version
-- [x] Colors that differ input/output nodes and wires by type
-- [ ] Automatic NoiseFn cached values
+- [ ] Automatic `NoiseFn` cached values
+- [x] WASM support using [Trunk](https://trunkrs.dev/)
+
+> [!WARNING]
+> `noise_gui` is currently in the proof-of-concept phase and may contain bugs and missing features.
+
+## How To Run Locally
+
+Desktop:
+
+```bash
+cargo run
+```
+
+Browser:
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo install trunk
+trunk serve --open
+```
 
 ## Data model export
 
