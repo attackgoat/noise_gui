@@ -15,7 +15,7 @@ use {
         Snarl,
     },
     log::debug,
-    std::collections::HashSet,
+    std::{cell::RefCell, collections::HashSet},
 };
 
 #[cfg(debug_assertions)]
@@ -260,6 +260,50 @@ impl<'a> Viewer<'a> {
 impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
     #[inline]
     fn connect(&mut self, from: &OutPin, to: &InPin, snarl: &mut Snarl<NoiseNode>) {
+        // Make sure this connection is not to the same node
+        if from.id.node == to.id.node {
+            debug!("Not connecting #{} to #{} (Same)", from.id.node, to.id.node);
+
+            return;
+        }
+
+        // Make sure this connection does not create a cyclic node graph
+        {
+            thread_local! {
+                static NODE_INDICES: RefCell<Option<Vec<usize>>> = RefCell::new(Some(Default::default()));
+            }
+
+            let mut node_indices = NODE_INDICES.take().unwrap();
+            node_indices.push(to.id.node);
+
+            while let Some(node_idx) = node_indices.pop() {
+                for node_idx in snarl
+                    .get_node(node_idx)
+                    .output_node_indices()
+                    .iter()
+                    .copied()
+                {
+                    if node_idx == from.id.node {
+                        node_indices.clear();
+                        NODE_INDICES.set(Some(node_indices));
+
+                        debug!(
+                            "Not connecting #{} to #{} (Cyclic)",
+                            from.id.node, to.id.node
+                        );
+
+                        // We found a cycle
+                        return;
+                    }
+
+                    node_indices.push(node_idx);
+                }
+            }
+
+            node_indices.clear();
+            NODE_INDICES.set(Some(node_indices));
+        }
+
         let from_node = snarl.get_node(from.id.node).clone();
         let to_node = snarl.get_node_mut(to.id.node);
 
@@ -606,7 +650,10 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 node.control_point_node_indices[control_point_idx] = Some(from.id.node);
             }
             (..) => {
-                debug!("Not connecting #{} to #{}", from.id.node, to.id.node);
+                debug!(
+                    "Not connecting #{} to #{} (Incompatible)",
+                    from.id.node, to.id.node
+                );
 
                 return;
             }

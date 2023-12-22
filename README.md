@@ -12,11 +12,6 @@ TODO:
 - [x] Support wasm with online version
 - [x] Colors that differ input/output nodes and wires by type
 - [ ] Automatic NoiseFn cached values
-- [ ] Fix bugs
-
-## Bugs
-
-- Cyclic graphs: need to check for this and make sure users cannot do it!
 
 ## Data model export
 
