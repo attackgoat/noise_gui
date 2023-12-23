@@ -8,8 +8,8 @@ use {
     },
     eframe::{get_value, set_value, CreationContext, Frame, Storage, APP_KEY},
     egui::{
-        github_link_file, menu, warn_if_debug_build, widgets, Align, CentralPanel, Color32,
-        ColorImage, Context, Id, Layout, TopBottomPanel, ViewportCommand,
+        github_link_file, warn_if_debug_build, Align, CentralPanel, Color32, ColorImage, Context,
+        Id, Layout,
     },
     egui_snarl::{ui::SnarlStyle, Snarl},
     log::debug,
@@ -20,10 +20,29 @@ use {
     },
 };
 
+#[cfg(not(target_arch = "wasm32"))]
+use {
+    egui::{menu, widgets, TopBottomPanel, ViewportCommand},
+    log::warn,
+    rfd::FileDialog,
+    ron::{
+        de::from_reader,
+        ser::{to_writer_pretty, PrettyConfig},
+    },
+    std::{
+        fs::OpenOptions,
+        path::{Path, PathBuf},
+    },
+};
+
 pub type NodeExprs = Arc<RwLock<HashMap<usize, (usize, Arc<Expr>)>>>;
 
 pub struct App {
     node_exprs: NodeExprs,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    path: Option<PathBuf>,
+
     snarl: Snarl<NoiseNode>,
     threads: Threads,
     removed_node_indices: HashSet<usize>,
@@ -32,6 +51,9 @@ pub struct App {
 }
 
 impl App {
+    #[cfg(not(target_arch = "wasm32"))]
+    const EXTENSION: &'static str = "ron";
+
     const IMAGE_COUNT: usize = Threads::IMAGE_COORDS as usize * Threads::IMAGE_COORDS as usize;
     const IMAGE_SIZE: [usize; 2] = [
         Threads::IMAGE_SIZE * Threads::IMAGE_COORDS as usize,
@@ -48,13 +70,14 @@ impl App {
         let node_exprs = Default::default();
         let threads = Threads::new(&node_exprs);
         let removed_node_indices = Default::default();
-        let updated_node_indices = snarl
-            .node_indices()
-            .filter_map(|(node_idx, node)| node.has_image().then_some(node_idx))
-            .collect();
+        let updated_node_indices = Self::all_image_node_indices(&snarl).collect();
 
         Self {
             node_exprs,
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: None,
+
             snarl,
             threads,
             removed_node_indices,
@@ -63,8 +86,33 @@ impl App {
         }
     }
 
+    fn all_image_node_indices(snarl: &Snarl<NoiseNode>) -> impl Iterator<Item = usize> + '_ {
+        snarl
+            .node_indices()
+            .filter_map(|(node_idx, node)| node.has_image().then_some(node_idx))
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn file_dialog() -> FileDialog {
+        FileDialog::new().add_filter("Noise Project", &[Self::EXTENSION])
+    }
+
     fn has_changes(&self) -> bool {
         !self.removed_node_indices.is_empty() || !self.updated_node_indices.is_empty()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn open(path: impl AsRef<Path>) -> anyhow::Result<Snarl<NoiseNode>> {
+        Ok(
+            from_reader(OpenOptions::new().read(true).open(path).map_err(|err| {
+                warn!("Unable to open file");
+                err
+            })?)
+            .map_err(|err: ron::error::SpannedError| {
+                warn!("Unable to read file");
+                err
+            })?,
+        )
     }
 
     fn remove_nodes(&mut self) {
@@ -76,6 +124,31 @@ impl App {
             // Just in case (never happens!)
             self.updated_node_indices.remove(&node_idx);
         }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn save_as(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
+        let mut path = path.as_ref().to_path_buf();
+
+        if path.extension().is_none() {
+            path.set_extension(Self::EXTENSION);
+        }
+
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .map_err(|err| {
+                warn!("Unable to create file");
+                err
+            })?;
+        to_writer_pretty(file, &self.snarl, PrettyConfig::default()).map_err(|err| {
+            warn!("Unable to write file");
+            err
+        })?;
+
+        Ok(())
     }
 
     fn update_images(&mut self) {
@@ -233,10 +306,12 @@ impl eframe::App for App {
 
         self.update_images();
 
+        #[cfg(not(target_arch = "wasm32"))]
         TopBottomPanel::top("top_panel").show(ctx, |ui| {
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("New").clicked() {
+                        self.path = None;
                         self.snarl = Snarl::new();
 
                         ui.close_menu();
@@ -244,21 +319,43 @@ impl eframe::App for App {
 
                     ui.separator();
 
-                    if ui.button("Open").clicked() {
-                        ui.close_menu();
-                    }
-
-                    if ui.button("Save").clicked() {
-                        ui.close_menu();
-                    }
-
-                    let is_web = cfg!(target_arch = "wasm32");
-                    if !is_web {
-                        ui.separator();
-
-                        if ui.button("Exit").clicked() {
-                            ctx.send_viewport_cmd(ViewportCommand::Close);
+                    if ui.button("Open File...").clicked() {
+                        if let Some(path) = Self::file_dialog().pick_file() {
+                            self.snarl = Self::open(&path).unwrap_or_default();
+                            self.path = Some(path);
+                            self.updated_node_indices =
+                                Self::all_image_node_indices(&self.snarl).collect();
                         }
+
+                        ui.close_menu();
+                    }
+
+                    if let Some(path) = &self.path {
+                        if ui.button("Save").clicked() {
+                            self.save_as(path).unwrap_or_default();
+
+                            ui.close_menu();
+                        }
+                    } else {
+                        ui.horizontal(|ui| {
+                            ui.add_space(2.0);
+                            ui.label("Save");
+                        });
+                    }
+
+                    if ui.button("Save As...").clicked() {
+                        if let Some(path) = Self::file_dialog().save_file() {
+                            self.save_as(&path).unwrap_or_default();
+                            self.path = Some(path);
+                        }
+
+                        ui.close_menu();
+                    }
+
+                    ui.separator();
+
+                    if ui.button("Exit").clicked() {
+                        ctx.send_viewport_cmd(ViewportCommand::Close);
                     }
                 });
                 ui.add_space(16.0);

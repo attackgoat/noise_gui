@@ -18,13 +18,28 @@ A graphical user interface for [Noise-rs](https://github.com/Razaekel/noise-rs).
 
 - [x] Support for all [Noise-rs](https://github.com/Razaekel/noise-rs) `NoiseFn` implementations
 - [ ] Allow zoom/pan on preview images
-- [ ] Allow saving the graph project to a file
+- [x] Allow saving the graph project to a file (_desktop only_)
 - [ ] Allow image/data export
 - [ ] Automatic `NoiseFn` cached values
 - [x] WASM support using [Trunk](https://trunkrs.dev/)
 
 > [!WARNING]
 > `noise_gui` is currently in the proof-of-concept phase and may contain bugs and missing features.
+
+## Development Dependencies
+
+Ubuntu 22.04:
+
+```bash
+sudo apt install libgtk-3-dev
+```
+
+Browser:
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo install trunk
+```
 
 ## How To Run Locally
 
@@ -37,8 +52,6 @@ cargo run
 Browser:
 
 ```bash
-rustup target add wasm32-unknown-unknown
-cargo install trunk
 trunk serve --open
 ```
 
