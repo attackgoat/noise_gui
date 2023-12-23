@@ -100,7 +100,7 @@ impl Threads {
         node_idx: usize,
         version: usize,
         image_info: ImageInfo,
-        tx: &Sender<(usize, usize, u8, [u8; 64])>,
+        tx: &Sender<(usize, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
     ) -> bool {
         let ImageInfo { coord, scale, x, y } = image_info;
 
