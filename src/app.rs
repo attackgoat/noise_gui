@@ -29,6 +29,7 @@ use {
         de::from_reader,
         ser::{to_writer_pretty, PrettyConfig},
     },
+    serde::Serialize,
     std::{
         fs::OpenOptions,
         path::{Path, PathBuf},
@@ -52,7 +53,7 @@ pub struct App {
 
 impl App {
     #[cfg(not(target_arch = "wasm32"))]
-    const EXTENSION: &'static str = "ron";
+    pub const EXTENSION: &'static str = "ron";
 
     const IMAGE_COUNT: usize = Threads::IMAGE_COORDS as usize * Threads::IMAGE_COORDS as usize;
     const IMAGE_SIZE: [usize; 2] = [
@@ -93,7 +94,7 @@ impl App {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn file_dialog() -> FileDialog {
+    pub fn file_dialog() -> FileDialog {
         FileDialog::new().add_filter("Noise Project", &[Self::EXTENSION])
     }
 
@@ -127,7 +128,10 @@ impl App {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn save_as(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
+    pub fn save_as<T>(path: impl AsRef<Path>, value: &T) -> anyhow::Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
         let mut path = path.as_ref().to_path_buf();
 
         if path.extension().is_none() {
@@ -143,7 +147,7 @@ impl App {
                 warn!("Unable to create file");
                 err
             })?;
-        to_writer_pretty(file, &self.snarl, PrettyConfig::default()).map_err(|err| {
+        to_writer_pretty(file, value, PrettyConfig::default()).map_err(|err| {
             warn!("Unable to write file");
             err
         })?;
@@ -332,7 +336,7 @@ impl eframe::App for App {
 
                     if let Some(path) = &self.path {
                         if ui.button("Save").clicked() {
-                            self.save_as(path).unwrap_or_default();
+                            Self::save_as(path, &self.snarl).unwrap_or_default();
 
                             ui.close_menu();
                         }
@@ -345,7 +349,7 @@ impl eframe::App for App {
 
                     if ui.button("Save As...").clicked() {
                         if let Some(path) = Self::file_dialog().save_file() {
-                            self.save_as(&path).unwrap_or_default();
+                            Self::save_as(&path, &self.snarl).unwrap_or_default();
                             self.path = Some(path);
                         }
 

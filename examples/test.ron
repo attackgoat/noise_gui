@@ -1,0 +1,4 @@
+Displace((
+    source: Cylinders(Value(0.78)),
+    axes: (Add((Perlin(Value(0)), Constant(Variable("my-var", 0.18)))), Add((Perlin(Value(0)), Constant(Variable("my-var", 0.18)))), Constant(Value(0.0)), Constant(Value(0.0))),
+))

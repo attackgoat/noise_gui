@@ -1,10 +1,13 @@
 use {
-    super::node::{
-        BlendNode, CheckerboardNode, ClampNode, CombinerNode, ControlPointNode, CurveNode,
-        CylindersNode, DisplaceNode, DistanceFunction, ExponentNode, FractalNode, GeneratorNode,
-        NodeValue::{Node, Value},
-        NoiseNode, ReturnType, RigidFractalNode, ScaleBiasNode, SelectNode, SourceType,
-        TerraceNode, TransformNode, TurbulenceNode, UnaryNode, WorleyNode,
+    super::{
+        expr::{DistanceFunction, ReturnType, SourceType, MAX_FRACTAL_OCTAVES},
+        node::{
+            BlendNode, CheckerboardNode, ClampNode, CombinerNode, ControlPointNode, CurveNode,
+            CylindersNode, DisplaceNode, ExponentNode, FractalNode, GeneratorNode,
+            NodeValue::{Node, Value},
+            NoiseNode, RigidFractalNode, ScaleBiasNode, SelectNode, TerraceNode, TransformNode,
+            TurbulenceNode, UnaryNode, WorleyNode,
+        },
     },
     egui::{
         epaint::PathShape, vec2, Align, Color32, ComboBox, DragValue, Layout, Pos2, Shape, Stroke,
@@ -20,6 +23,9 @@ use {
 
 #[cfg(debug_assertions)]
 use egui::RichText;
+
+#[cfg(not(target_arch = "wasm32"))]
+use super::app::App;
 
 pub struct Viewer<'a> {
     pub removed_node_indices: &'a mut HashSet<usize>,
@@ -89,7 +95,7 @@ impl<'a> Viewer<'a> {
             |ui| {
                 ui.set_height(16.0 * scale);
                 if ui
-                    .add(DragValue::new(value).clamp_range(1..=FractalNode::MAX_OCTAVES))
+                    .add(DragValue::new(value).clamp_range(1..=MAX_FRACTAL_OCTAVES))
                     .changed()
                 {
                     self.updated_node_indices.insert(node_idx);
@@ -2872,6 +2878,27 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         snarl: &mut Snarl<NoiseNode>,
     ) {
         ui.label("Node menu");
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let node = snarl.get_node(node_idx);
+
+            match node {
+                NoiseNode::ControlPoint(_) | NoiseNode::F64(_) | NoiseNode::U32(_) => (),
+                _ => {
+                    if ui.button("Export File...").clicked() {
+                        if let Some(path) = App::file_dialog().save_file() {
+                            App::save_as(path, &node.expr(snarl)).unwrap_or_default();
+                        }
+
+                        ui.close_menu();
+                    }
+
+                    ui.separator();
+                }
+            }
+        }
+
         if ui.button("Remove").clicked() {
             self.removed_node_indices.insert(node_idx);
 

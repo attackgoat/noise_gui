@@ -1,5 +1,4 @@
 use {
-    super::node::{DistanceFunction, FractalNode, ReturnType, SourceType},
     noise::{
         core::worley::{
             self,
@@ -12,95 +11,194 @@ use {
         Worley,
     },
     ordered_float::OrderedFloat,
+    serde::{Deserialize, Serialize},
     std::cell::RefCell,
 };
 
-#[derive(Clone, Debug)]
+pub const MAX_FRACTAL_OCTAVES: u32 = BasicMulti::<Perlin>::MAX_OCTAVES as _;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BlendExpr {
     pub sources: [Box<Expr>; 2],
     pub control: Box<Expr>,
 }
 
-#[derive(Clone, Debug)]
+impl BlendExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.sources.iter_mut().for_each(|expr| {
+            expr.set_f64(name, value);
+        });
+        self.control.set_f64(name, value);
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.sources.iter_mut().for_each(|expr| {
+            expr.set_u32(name, value);
+        });
+        self.control.set_u32(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClampExpr {
     pub source: Box<Expr>,
 
-    pub lower_bound: f64,
-    pub upper_bound: f64,
+    pub lower_bound: Variable<f64>,
+    pub upper_bound: Variable<f64>,
 }
 
-#[derive(Clone, Copy, Debug)]
+impl ClampExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.source.set_f64(name, value);
+        self.lower_bound.set_if_named(name, value);
+        self.lower_bound.set_if_named(name, value);
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.source.set_u32(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ControlPointExpr {
-    pub input_value: f64,
-    pub output_value: f64,
+    pub input_value: Variable<f64>,
+    pub output_value: Variable<f64>,
 }
 
-#[derive(Clone, Debug)]
+impl ControlPointExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.input_value.set_if_named(name, value);
+        self.output_value.set_if_named(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CurveExpr {
     pub source: Box<Expr>,
 
     pub control_points: Vec<ControlPointExpr>,
 }
 
-#[derive(Clone, Debug)]
+impl CurveExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.source.set_f64(name, value);
+        self.control_points
+            .iter_mut()
+            .for_each(|expr| expr.set_f64(name, value));
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.source.set_u32(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DisplaceExpr {
     pub source: Box<Expr>,
 
     pub axes: [Box<Expr>; 4],
 }
 
-#[derive(Clone, Debug)]
+impl DisplaceExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.source.set_f64(name, value);
+        self.axes.iter_mut().for_each(|expr| {
+            expr.set_f64(name, value);
+        });
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.source.set_u32(name, value);
+        self.axes.iter_mut().for_each(|expr| {
+            expr.set_u32(name, value);
+        });
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum DistanceFunction {
+    Chebyshev,
+    Euclidean,
+    EuclideanSquared,
+    Manhattan,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ExponentExpr {
     pub source: Box<Expr>,
 
-    pub exponent: f64,
+    pub exponent: Variable<f64>,
 }
 
-#[derive(Clone, Copy, Debug)]
+impl ExponentExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.source.set_f64(name, value);
+        self.exponent.set_if_named(name, value);
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.source.set_u32(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FractalExpr {
     pub source_ty: SourceType,
-    pub seed: u32,
-    pub octaves: u32,
-    pub frequency: f64,
-    pub lacunarity: f64,
-    pub persistence: f64,
+    pub seed: Variable<u32>,
+    pub octaves: Variable<u32>,
+    pub frequency: Variable<f64>,
+    pub lacunarity: Variable<f64>,
+    pub persistence: Variable<f64>,
 }
 
-#[derive(Clone, Debug)]
+impl FractalExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.frequency.set_if_named(name, value);
+        self.lacunarity.set_if_named(name, value);
+        self.persistence.set_if_named(name, value);
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.seed.set_if_named(name, value);
+        self.octaves.set_if_named(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Expr {
     Abs(Box<Expr>),
     Add([Box<Expr>; 2]),
     BasicMulti(FractalExpr),
     Billow(FractalExpr),
     Blend(BlendExpr),
-    Checkerboard(u32),
+    Checkerboard(Variable<u32>),
     Clamp(ClampExpr),
+    Constant(Variable<f64>),
     Curve(CurveExpr),
-    Cylinders(f64),
+    Cylinders(Variable<f64>),
     Displace(DisplaceExpr),
     Exponent(ExponentExpr),
-    F64(f64),
     Fbm(FractalExpr),
     HybridMulti(FractalExpr),
     Max([Box<Expr>; 2]),
     Min([Box<Expr>; 2]),
     Multiply([Box<Expr>; 2]),
     Negate(Box<Expr>),
-    OpenSimplex(u32),
-    Perlin(u32),
-    PerlinSurflet(u32),
+    OpenSimplex(Variable<u32>),
+    Perlin(Variable<u32>),
+    PerlinSurflet(Variable<u32>),
     Power([Box<Expr>; 2]),
     RidgedMulti(RigidFractalExpr),
     RotatePoint(TransformExpr),
     ScaleBias(ScaleBiasExpr),
     ScalePoint(TransformExpr),
     Select(SelectExpr),
-    Simplex(u32),
-    SuperSimplex(u32),
+    Simplex(Variable<u32>),
+    SuperSimplex(Variable<u32>),
     Terrace(TerraceExpr),
     TranslatePoint(TransformExpr),
     Turbulence(TurbulenceExpr),
-    Value(u32),
+    Value(Variable<u32>),
     Worley(WorleyExpr),
 }
 
@@ -110,11 +208,11 @@ impl Expr {
         T: Default + Seedable,
     {
         Box::new(
-            BasicMulti::<T>::new(expr.seed)
-                .set_octaves(expr.octaves.clamp(1, FractalNode::MAX_OCTAVES) as _)
-                .set_frequency(expr.frequency)
-                .set_lacunarity(expr.lacunarity)
-                .set_persistence(expr.persistence),
+            BasicMulti::<T>::new(expr.seed.value())
+                .set_octaves(expr.octaves.value().clamp(1, MAX_FRACTAL_OCTAVES) as _)
+                .set_frequency(expr.frequency.value())
+                .set_lacunarity(expr.lacunarity.value())
+                .set_persistence(expr.persistence.value()),
         )
     }
 
@@ -123,11 +221,11 @@ impl Expr {
         T: Default + Seedable,
     {
         Box::new(
-            Billow::<T>::new(expr.seed)
-                .set_octaves(expr.octaves.clamp(1, FractalNode::MAX_OCTAVES) as _)
-                .set_frequency(expr.frequency)
-                .set_lacunarity(expr.lacunarity)
-                .set_persistence(expr.persistence),
+            Billow::<T>::new(expr.seed.value())
+                .set_octaves(expr.octaves.value().clamp(1, MAX_FRACTAL_OCTAVES) as _)
+                .set_frequency(expr.frequency.value())
+                .set_lacunarity(expr.lacunarity.value())
+                .set_persistence(expr.persistence.value()),
         )
     }
 
@@ -143,8 +241,8 @@ impl Expr {
 
             let mut inputs = INPUTS.take().unwrap();
 
-            for &ControlPointExpr { input_value, .. } in control_points {
-                let input_value = OrderedFloat(input_value);
+            for ControlPointExpr { input_value, .. } in control_points {
+                let input_value = OrderedFloat(input_value.value());
                 if let Err(idx) = inputs.binary_search(&input_value) {
                     if inputs.len() == 3 {
                         inputs.clear();
@@ -171,7 +269,10 @@ impl Expr {
         let mut res = Curve::new(expr.source.noise());
 
         for control_point in &expr.control_points {
-            res = res.add_control_point(control_point.input_value, control_point.output_value);
+            res = res.add_control_point(
+                control_point.input_value.value(),
+                control_point.output_value.value(),
+            );
         }
 
         Box::new(res)
@@ -182,11 +283,11 @@ impl Expr {
         T: Default + Seedable,
     {
         Box::new(
-            Fbm::<T>::new(expr.seed)
-                .set_octaves(expr.octaves.clamp(1, FractalNode::MAX_OCTAVES) as _)
-                .set_frequency(expr.frequency)
-                .set_lacunarity(expr.lacunarity)
-                .set_persistence(expr.persistence),
+            Fbm::<T>::new(expr.seed.value())
+                .set_octaves(expr.octaves.value().clamp(1, MAX_FRACTAL_OCTAVES) as _)
+                .set_frequency(expr.frequency.value())
+                .set_lacunarity(expr.lacunarity.value())
+                .set_persistence(expr.persistence.value()),
         )
     }
 
@@ -195,11 +296,11 @@ impl Expr {
         T: Default + Seedable,
     {
         Box::new(
-            HybridMulti::<T>::new(expr.seed)
-                .set_octaves(expr.octaves.clamp(1, FractalNode::MAX_OCTAVES) as _)
-                .set_frequency(expr.frequency)
-                .set_lacunarity(expr.lacunarity)
-                .set_persistence(expr.persistence),
+            HybridMulti::<T>::new(expr.seed.value())
+                .set_octaves(expr.octaves.value().clamp(1, MAX_FRACTAL_OCTAVES) as _)
+                .set_frequency(expr.frequency.value())
+                .set_lacunarity(expr.lacunarity.value())
+                .set_persistence(expr.persistence.value()),
         )
     }
 
@@ -230,14 +331,17 @@ impl Expr {
                 expr.sources[1].noise(),
                 expr.control.noise(),
             )),
-            &Self::Checkerboard(size) => Box::new(Checkerboard::new(size as _)),
+            Self::Checkerboard(size) => Box::new(Checkerboard::new(size.value() as _)),
             Self::Clamp(expr) => Box::new(
                 Clamp::new(expr.source.noise())
-                    .set_lower_bound(expr.lower_bound.min(expr.upper_bound))
-                    .set_upper_bound(expr.lower_bound.max(expr.upper_bound)),
+                    .set_lower_bound(expr.lower_bound.value().min(expr.upper_bound.value()))
+                    .set_upper_bound(expr.lower_bound.value().max(expr.upper_bound.value())),
             ),
+            Self::Constant(value) => Box::new(Constant::new(value.value())),
             Self::Curve(expr) => Self::curve(expr),
-            &Self::Cylinders(frequency) => Box::new(Cylinders::new().set_frequency(frequency)),
+            Self::Cylinders(frequency) => {
+                Box::new(Cylinders::new().set_frequency(frequency.value()))
+            }
             Self::Displace(expr) => Box::new(Displace::new(
                 expr.source.noise(),
                 expr.axes[0].noise(),
@@ -246,9 +350,8 @@ impl Expr {
                 expr.axes[3].noise(),
             )),
             Self::Exponent(expr) => {
-                Box::new(Exponent::new(expr.source.noise()).set_exponent(expr.exponent))
+                Box::new(Exponent::new(expr.source.noise()).set_exponent(expr.exponent.value()))
             }
-            &Self::F64(value) => Box::new(Constant::new(value)),
             Self::Fbm(expr) => match expr.source_ty {
                 SourceType::OpenSimplex => Self::fbm::<OpenSimplex>(expr),
                 SourceType::Perlin => Self::fbm::<Perlin>(expr),
@@ -273,9 +376,9 @@ impl Expr {
                 Box::new(Multiply::new(source1.noise(), source2.noise()))
             }
             Self::Negate(expr) => Box::new(Negate::new(expr.noise())),
-            &Self::OpenSimplex(seed) => Box::new(OpenSimplex::new(seed)),
-            &Self::Perlin(seed) => Box::new(Perlin::new(seed)),
-            &Self::PerlinSurflet(seed) => Box::new(PerlinSurflet::new(seed)),
+            Self::OpenSimplex(seed) => Box::new(OpenSimplex::new(seed.value())),
+            Self::Perlin(seed) => Box::new(Perlin::new(seed.value())),
+            Self::PerlinSurflet(seed) => Box::new(PerlinSurflet::new(seed.value())),
             Self::Power([source1, source2]) => {
                 Box::new(Power::new(source1.noise(), source2.noise()))
             }
@@ -289,22 +392,22 @@ impl Expr {
                 SourceType::Worley => Self::rigid_multi::<Worley>(expr),
             },
             Self::RotatePoint(expr) => Box::new(RotatePoint::new(expr.source.noise()).set_angles(
-                expr.axes[0],
-                expr.axes[1],
-                expr.axes[2],
-                expr.axes[3],
+                expr.axes[0].value(),
+                expr.axes[1].value(),
+                expr.axes[2].value(),
+                expr.axes[3].value(),
             )),
             Self::ScaleBias(expr) => Box::new(
                 ScaleBias::new(expr.source.noise())
-                    .set_bias(expr.bias)
-                    .set_scale(expr.scale),
+                    .set_bias(expr.bias.value())
+                    .set_scale(expr.scale.value()),
             ),
             Self::ScalePoint(expr) => {
                 Box::new(ScalePoint::new(expr.source.noise()).set_all_scales(
-                    expr.axes[0],
-                    expr.axes[1],
-                    expr.axes[2],
-                    expr.axes[3],
+                    expr.axes[0].value(),
+                    expr.axes[1].value(),
+                    expr.axes[2].value(),
+                    expr.axes[3].value(),
                 ))
             }
             Self::Select(expr) => Box::new(
@@ -313,18 +416,18 @@ impl Expr {
                     expr.sources[1].noise(),
                     expr.control.noise(),
                 )
-                .set_bounds(expr.lower_bound, expr.upper_bound)
-                .set_falloff(expr.falloff),
+                .set_bounds(expr.lower_bound.value(), expr.upper_bound.value())
+                .set_falloff(expr.falloff.value()),
             ),
-            &Self::Simplex(seed) => Box::new(Simplex::new(seed)),
-            &Self::SuperSimplex(seed) => Box::new(SuperSimplex::new(seed)),
+            Self::Simplex(seed) => Box::new(Simplex::new(seed.value())),
+            Self::SuperSimplex(seed) => Box::new(SuperSimplex::new(seed.value())),
             Self::Terrace(expr) => Self::terrace(expr),
             Self::TranslatePoint(expr) => Box::new(
                 TranslatePoint::new(expr.source.noise()).set_all_translations(
-                    expr.axes[0],
-                    expr.axes[1],
-                    expr.axes[2],
-                    expr.axes[3],
+                    expr.axes[0].value(),
+                    expr.axes[1].value(),
+                    expr.axes[2].value(),
+                    expr.axes[3].value(),
                 ),
             ),
             Self::Turbulence(expr) => match expr.source_ty {
@@ -336,10 +439,10 @@ impl Expr {
                 SourceType::Value => Self::turbulence::<Value>(expr),
                 SourceType::Worley => Self::turbulence::<Worley>(expr),
             },
-            &Self::Value(seed) => Box::new(Value::new(seed)),
+            Self::Value(seed) => Box::new(Value::new(seed.value())),
             Self::Worley(expr) => Box::new(
-                Worley::new(expr.seed)
-                    .set_frequency(expr.frequency)
+                Worley::new(expr.seed.value())
+                    .set_frequency(expr.frequency.value())
                     .set_distance_function(match expr.distance_fn {
                         DistanceFunction::Chebyshev => chebyshev,
                         DistanceFunction::Euclidean => euclidean,
@@ -359,13 +462,101 @@ impl Expr {
         T: Default + Seedable,
     {
         Box::new(
-            RidgedMulti::<T>::new(expr.seed)
-                .set_octaves(expr.octaves.clamp(1, FractalNode::MAX_OCTAVES) as _)
-                .set_frequency(expr.frequency)
-                .set_lacunarity(expr.lacunarity)
-                .set_persistence(expr.persistence)
-                .set_attenuation(expr.attenuation),
+            RidgedMulti::<T>::new(expr.seed.value())
+                .set_octaves(expr.octaves.value().clamp(1, MAX_FRACTAL_OCTAVES) as _)
+                .set_frequency(expr.frequency.value())
+                .set_lacunarity(expr.lacunarity.value())
+                .set_persistence(expr.persistence.value())
+                .set_attenuation(expr.attenuation.value()),
         )
+    }
+
+    #[allow(unused)]
+    pub fn set_f64(&mut self, name: &str, value: f64) -> &mut Self {
+        match self {
+            Self::Abs(expr) | Self::Negate(expr) => {
+                expr.set_f64(name, value);
+            }
+            Self::Add(exprs)
+            | Self::Max(exprs)
+            | Self::Min(exprs)
+            | Self::Multiply(exprs)
+            | Self::Power(exprs) => exprs.iter_mut().for_each(|expr| {
+                expr.set_f64(name, value);
+            }),
+            Self::BasicMulti(expr)
+            | Self::Billow(expr)
+            | Self::Fbm(expr)
+            | Self::HybridMulti(expr) => expr.set_f64(name, value),
+            Self::Blend(expr) => expr.set_f64(name, value),
+            Self::Clamp(expr) => expr.set_f64(name, value),
+            Self::Constant(expr) | Self::Cylinders(expr) => expr.set_if_named(name, value),
+            Self::Curve(expr) => expr.set_f64(name, value),
+            Self::Displace(expr) => expr.set_f64(name, value),
+            Self::Exponent(expr) => expr.set_f64(name, value),
+            Self::RidgedMulti(expr) => expr.set_f64(name, value),
+            Self::RotatePoint(expr) | Self::ScalePoint(expr) | Self::TranslatePoint(expr) => {
+                expr.set_f64(name, value)
+            }
+            Self::ScaleBias(expr) => expr.set_f64(name, value),
+            Self::Select(expr) => expr.set_f64(name, value),
+            Self::Terrace(expr) => expr.set_f64(name, value),
+            Self::Turbulence(expr) => expr.set_f64(name, value),
+            Self::Worley(expr) => expr.set_f64(name, value),
+            Self::Checkerboard(_)
+            | Self::OpenSimplex(_)
+            | Self::Perlin(_)
+            | Self::PerlinSurflet(_)
+            | Self::Simplex(_)
+            | Self::SuperSimplex(_)
+            | Self::Value(_) => (),
+        }
+
+        self
+    }
+
+    #[allow(unused)]
+    pub fn set_u32(&mut self, name: &str, value: u32) -> &mut Self {
+        match self {
+            Self::Abs(expr) | Self::Negate(expr) => {
+                expr.set_u32(name, value);
+            }
+            Self::Add(exprs)
+            | Self::Max(exprs)
+            | Self::Min(exprs)
+            | Self::Multiply(exprs)
+            | Self::Power(exprs) => exprs.iter_mut().for_each(|expr| {
+                expr.set_u32(name, value);
+            }),
+            Self::BasicMulti(expr)
+            | Self::Billow(expr)
+            | Self::Fbm(expr)
+            | Self::HybridMulti(expr) => expr.set_u32(name, value),
+            Self::Blend(expr) => expr.set_u32(name, value),
+            Self::Checkerboard(expr)
+            | Self::OpenSimplex(expr)
+            | Self::Perlin(expr)
+            | Self::PerlinSurflet(expr)
+            | Self::Simplex(expr)
+            | Self::SuperSimplex(expr)
+            | Self::Value(expr) => expr.set_if_named(name, value),
+            Self::Clamp(expr) => expr.set_u32(name, value),
+            Self::Curve(expr) => expr.set_u32(name, value),
+            Self::Displace(expr) => expr.set_u32(name, value),
+            Self::Exponent(expr) => expr.set_u32(name, value),
+            Self::RidgedMulti(expr) => expr.set_u32(name, value),
+            Self::RotatePoint(expr) | Self::ScalePoint(expr) | Self::TranslatePoint(expr) => {
+                expr.set_u32(name, value)
+            }
+            Self::Select(expr) => expr.set_u32(name, value),
+            Self::ScaleBias(expr) => expr.set_u32(name, value),
+            Self::Terrace(expr) => expr.set_u32(name, value),
+            Self::Turbulence(expr) => expr.set_u32(name, value),
+            Self::Worley(expr) => expr.set_u32(name, value),
+            Self::Constant(_) | Self::Cylinders(_) => (),
+        }
+
+        self
     }
 
     fn turbulence<T>(expr: &TurbulenceExpr) -> Box<Turbulence<Box<dyn NoiseFn<f64, 3>>, T>>
@@ -374,21 +565,21 @@ impl Expr {
     {
         Box::new(
             Turbulence::<Box<dyn NoiseFn<f64, 3>>, T>::new(expr.source.noise())
-                .set_seed(expr.seed)
-                .set_frequency(expr.frequency)
-                .set_power(expr.power)
-                .set_roughness(expr.roughness as _),
+                .set_seed(expr.seed.value())
+                .set_frequency(expr.frequency.value())
+                .set_power(expr.power.value())
+                .set_roughness(expr.roughness.value() as _),
         )
     }
 
     fn terrace(expr: &TerraceExpr) -> Box<dyn NoiseFn<f64, 3>> {
-        fn invalid_inputs(control_points: &[f64]) -> bool {
+        fn invalid_inputs(control_points: &[Variable<f64>]) -> bool {
             debug_assert!(control_points.len() >= 2);
 
-            let first_input = OrderedFloat(control_points[0]);
+            let first_input = OrderedFloat(control_points[0].value());
 
-            for &input_value in &control_points[1..] {
-                let input_value = OrderedFloat(input_value);
+            for input_value in &control_points[1..] {
+                let input_value = OrderedFloat(input_value.value());
                 if input_value != first_input {
                     return false;
                 }
@@ -404,73 +595,216 @@ impl Expr {
 
         let mut res = Terrace::new(expr.source.noise()).invert_terraces(expr.inverted);
 
-        for control_point in expr.control_points.iter().copied() {
-            res = res.add_control_point(control_point);
+        for control_point in expr.control_points.iter() {
+            res = res.add_control_point(control_point.value());
         }
 
         Box::new(res)
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct RigidFractalExpr {
-    pub source_ty: SourceType,
-    pub seed: u32,
-    pub octaves: u32,
-    pub frequency: f64,
-    pub lacunarity: f64,
-    pub persistence: f64,
-    pub attenuation: f64,
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ReturnType {
+    Distance,
+    Value,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RigidFractalExpr {
+    pub source_ty: SourceType,
+    pub seed: Variable<u32>,
+    pub octaves: Variable<u32>,
+    pub frequency: Variable<f64>,
+    pub lacunarity: Variable<f64>,
+    pub persistence: Variable<f64>,
+    pub attenuation: Variable<f64>,
+}
+
+impl RigidFractalExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.frequency.set_if_named(name, value);
+        self.lacunarity.set_if_named(name, value);
+        self.persistence.set_if_named(name, value);
+        self.attenuation.set_if_named(name, value);
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.seed.set_if_named(name, value);
+        self.octaves.set_if_named(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ScaleBiasExpr {
     pub source: Box<Expr>,
 
-    pub scale: f64,
-    pub bias: f64,
+    pub scale: Variable<f64>,
+    pub bias: Variable<f64>,
 }
 
-#[derive(Clone, Debug)]
+impl ScaleBiasExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.source.set_f64(name, value);
+        self.scale.set_if_named(name, value);
+        self.bias.set_if_named(name, value);
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.source.set_u32(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SelectExpr {
     pub sources: [Box<Expr>; 2],
     pub control: Box<Expr>,
 
-    pub lower_bound: f64,
-    pub upper_bound: f64,
-    pub falloff: f64,
+    pub lower_bound: Variable<f64>,
+    pub upper_bound: Variable<f64>,
+    pub falloff: Variable<f64>,
 }
 
-#[derive(Clone, Debug)]
+impl SelectExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.sources.iter_mut().for_each(|expr| {
+            expr.set_f64(name, value);
+        });
+        self.control.set_f64(name, value);
+        self.lower_bound.set_if_named(name, value);
+        self.upper_bound.set_if_named(name, value);
+        self.falloff.set_if_named(name, value);
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.sources.iter_mut().for_each(|expr| {
+            expr.set_u32(name, value);
+        });
+        self.control.set_u32(name, value);
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum SourceType {
+    OpenSimplex,
+    Perlin,
+    PerlinSurflet,
+    Simplex,
+    SuperSimplex,
+    Value,
+    Worley,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TerraceExpr {
     pub source: Box<Expr>,
 
     pub inverted: bool,
-    pub control_points: Vec<f64>,
+    pub control_points: Vec<Variable<f64>>,
 }
 
-#[derive(Clone, Debug)]
+impl TerraceExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.source.set_f64(name, value);
+        self.control_points
+            .iter_mut()
+            .for_each(|control_point| control_point.set_if_named(name, value));
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.source.set_u32(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TransformExpr {
     pub source: Box<Expr>,
 
-    pub axes: [f64; 4],
+    pub axes: [Variable<f64>; 4],
 }
 
-#[derive(Clone, Debug)]
+impl TransformExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.source.set_f64(name, value);
+        self.axes
+            .iter_mut()
+            .for_each(|axis| axis.set_if_named(name, value));
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.source.set_u32(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TurbulenceExpr {
     pub source: Box<Expr>,
 
     pub source_ty: SourceType,
-    pub seed: u32,
-    pub frequency: f64,
-    pub power: f64,
-    pub roughness: u32,
+    pub seed: Variable<u32>,
+    pub frequency: Variable<f64>,
+    pub power: Variable<f64>,
+    pub roughness: Variable<u32>,
 }
 
-#[derive(Clone, Debug)]
+impl TurbulenceExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.source.set_f64(name, value);
+        self.frequency.set_if_named(name, value);
+        self.power.set_if_named(name, value);
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.source.set_u32(name, value);
+        self.seed.set_if_named(name, value);
+        self.roughness.set_if_named(name, value);
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum Variable<T> {
+    #[serde(rename = "Value")]
+    Anonymous(T),
+
+    #[serde(rename = "Variable")]
+    Named(String, T),
+}
+
+impl<T> Variable<T> {
+    fn set_if_named(&mut self, name: &str, value: T)
+    where
+        T: Copy,
+    {
+        if let Self::Named(named, valued) = self {
+            if named == name {
+                *valued = value;
+            }
+        }
+    }
+
+    fn value(&self) -> T
+    where
+        T: Copy,
+    {
+        match self {
+            Self::Anonymous(value) | Self::Named(_, value) => *value,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct WorleyExpr {
-    pub seed: u32,
-    pub frequency: f64,
+    pub seed: Variable<u32>,
+    pub frequency: Variable<f64>,
     pub distance_fn: DistanceFunction,
     pub return_ty: ReturnType,
+}
+
+impl WorleyExpr {
+    fn set_f64(&mut self, name: &str, value: f64) {
+        self.frequency.set_if_named(name, value);
+    }
+
+    fn set_u32(&mut self, name: &str, value: u32) {
+        self.seed.set_if_named(name, value);
+    }
 }
