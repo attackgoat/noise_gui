@@ -2633,239 +2633,227 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
     fn graph_menu(&mut self, pos: Pos2, ui: &mut Ui, _scale: f32, snarl: &mut Snarl<NoiseNode>) {
         ui.label("Add node");
 
-        ui.separator();
-        ui.label("Combiners");
+        ui.menu_button("Combiners", |ui| {
+            if ui.button("Add").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Add(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Add").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Add(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Min").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Min(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Min").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Min(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Max").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Max(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Max").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Max(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Multiply").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Multiply(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Multiply").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Multiply(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Power").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Power(Default::default())));
+                ui.close_menu();
+            }
+        });
+        ui.menu_button("Generators", |ui| {
+            if ui.button("Checkerboard").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Checkerboard(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Power").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Power(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Cylinders").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Cylinders(Default::default())));
+                ui.close_menu();
+            }
 
-        ui.separator();
-        ui.label("Generators");
+            if ui.button("Open Simplex").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::OpenSimplex(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Checkerboard").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Checkerboard(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Perlin").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Perlin(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Cylinders").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Cylinders(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Perlin Surflet").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::PerlinSurflet(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Open Simplex").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::OpenSimplex(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Simplex").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Simplex(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Perlin").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Perlin(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Super Simplex").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::SuperSimplex(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Perlin Surflet").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::PerlinSurflet(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Value").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Value(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Simplex").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Simplex(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Worley").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Worley(Default::default())));
+                ui.close_menu();
+            }
+        });
+        ui.menu_button("Fractals", |ui| {
+            if ui.button("Basic Multi").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::BasicMulti(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Super Simplex").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::SuperSimplex(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Hybrid Multi").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::HybridMulti(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Value").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Value(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Rigid Multi").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::RigidMulti(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Worley").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Worley(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Billow").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Billow(Default::default())));
+                ui.close_menu();
+            }
 
-        ui.separator();
-        ui.label("Fractals");
+            if ui.button("fBm").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Fbm(Default::default())));
+                ui.close_menu();
+            }
+        });
+        ui.menu_button("Modifiers", |ui| {
+            if ui.button("Abs").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Abs(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Basic Multi").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::BasicMulti(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Clamp").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Clamp(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Hybrid Multi").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::HybridMulti(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Curve").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Curve(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Rigid Multi").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::RigidMulti(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Exponent").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Exponent(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Billow").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Billow(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Negate").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Negate(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("fBm").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Fbm(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Scale + Bias").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::ScaleBias(Default::default())));
+                ui.close_menu();
+            }
 
-        ui.separator();
-        ui.label("Modifiers");
+            if ui.button("Terrace").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Terrace(Default::default())));
+                ui.close_menu();
+            }
+        });
+        ui.menu_button("Selectors", |ui| {
+            if ui.button("Blend").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Blend(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Abs").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Abs(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Select").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Select(Default::default())));
+                ui.close_menu();
+            }
+        });
+        ui.menu_button("Transformers", |ui| {
+            if ui.button("Displace").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Displace(Default::default())));
+                ui.close_menu();
+            }
 
-        if ui.button("Clamp").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Clamp(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Rotate Point").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::RotatePoint(TransformNode::zero())));
+                ui.close_menu();
+            }
 
-        if ui.button("Curve").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Curve(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Scale Point").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::ScalePoint(TransformNode::one())));
+                ui.close_menu();
+            }
 
-        if ui.button("Exponent").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Exponent(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Translate Point").clicked() {
+                self.updated_node_indices.insert(
+                    snarl.insert_node(pos, NoiseNode::TranslatePoint(TransformNode::zero())),
+                );
+                ui.close_menu();
+            }
 
-        if ui.button("Negate").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Negate(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Turbulence").clicked() {
+                self.updated_node_indices
+                    .insert(snarl.insert_node(pos, NoiseNode::Turbulence(Default::default())));
+                ui.close_menu();
+            }
+        });
+        ui.menu_button("Constants", |ui| {
+            if ui.button("Control Point").clicked() {
+                snarl.insert_node(pos, NoiseNode::ControlPoint(Default::default()));
+                ui.close_menu();
+            }
 
-        if ui.button("Scale + Bias").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::ScaleBias(Default::default())));
-            ui.close_menu();
-        }
+            if ui.button("Decimal").clicked() {
+                snarl.insert_node(pos, NoiseNode::F64(Default::default()));
+                ui.close_menu();
+            }
 
-        if ui.button("Terrace").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Terrace(Default::default())));
-            ui.close_menu();
-        }
-
-        ui.separator();
-        ui.label("Selectors");
-
-        if ui.button("Blend").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Blend(Default::default())));
-            ui.close_menu();
-        }
-
-        if ui.button("Select").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Select(Default::default())));
-            ui.close_menu();
-        }
-
-        ui.separator();
-        ui.label("Transformers");
-
-        if ui.button("Displace").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Displace(Default::default())));
-            ui.close_menu();
-        }
-
-        if ui.button("Rotate Point").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::RotatePoint(TransformNode::zero())));
-            ui.close_menu();
-        }
-
-        if ui.button("Scale Point").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::ScalePoint(TransformNode::one())));
-            ui.close_menu();
-        }
-
-        if ui.button("Translate Point").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::TranslatePoint(TransformNode::zero())));
-            ui.close_menu();
-        }
-
-        if ui.button("Turbulence").clicked() {
-            self.updated_node_indices
-                .insert(snarl.insert_node(pos, NoiseNode::Turbulence(Default::default())));
-            ui.close_menu();
-        }
-
-        ui.separator();
-        ui.label("Constants");
-
-        if ui.button("Control Point").clicked() {
-            snarl.insert_node(pos, NoiseNode::ControlPoint(Default::default()));
-            ui.close_menu();
-        }
-
-        if ui.button("Decimal").clicked() {
-            snarl.insert_node(pos, NoiseNode::F64(Default::default()));
-            ui.close_menu();
-        }
-
-        if ui.button("Integer").clicked() {
-            snarl.insert_node(pos, NoiseNode::U32(Default::default()));
-            ui.close_menu();
-        }
+            if ui.button("Integer").clicked() {
+                snarl.insert_node(pos, NoiseNode::U32(Default::default()));
+                ui.close_menu();
+            }
+        });
     }
 
     fn node_menu(
