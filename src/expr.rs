@@ -174,6 +174,7 @@ pub enum Expr {
     Checkerboard(Variable<u32>),
     Clamp(ClampExpr),
     Constant(Variable<f64>),
+    ConstantU32(Variable<u32>),
     Curve(CurveExpr),
     Cylinders(Variable<f64>),
     Displace(DisplaceExpr),
@@ -338,6 +339,7 @@ impl Expr {
                     .set_upper_bound(expr.lower_bound.value().max(expr.upper_bound.value())),
             ),
             Self::Constant(value) => Box::new(Constant::new(value.value())),
+            Self::ConstantU32(_) => unreachable!(),
             Self::Curve(expr) => Self::curve(expr),
             Self::Cylinders(frequency) => {
                 Box::new(Cylinders::new().set_frequency(frequency.value()))
@@ -504,6 +506,7 @@ impl Expr {
             Self::Turbulence(expr) => expr.set_f64(name, value),
             Self::Worley(expr) => expr.set_f64(name, value),
             Self::Checkerboard(_)
+            | Self::ConstantU32(_)
             | Self::OpenSimplex(_)
             | Self::Perlin(_)
             | Self::PerlinSurflet(_)
@@ -534,6 +537,7 @@ impl Expr {
             | Self::HybridMulti(expr) => expr.set_u32(name, value),
             Self::Blend(expr) => expr.set_u32(name, value),
             Self::Checkerboard(expr)
+            | Self::ConstantU32(expr)
             | Self::OpenSimplex(expr)
             | Self::Perlin(expr)
             | Self::PerlinSurflet(expr)
@@ -601,6 +605,14 @@ impl Expr {
 
         Box::new(res)
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum OpType {
+    Add,
+    Divide,
+    Multiply,
+    Subtract,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -767,6 +779,8 @@ pub enum Variable<T> {
 
     #[serde(rename = "Variable")]
     Named(String, T),
+
+    Operation([Box<Self>; 2], OpType),
 }
 
 impl<T> Variable<T> {
@@ -774,19 +788,58 @@ impl<T> Variable<T> {
     where
         T: Copy,
     {
-        if let Self::Named(named, valued) = self {
-            if named == name {
-                *valued = value;
+        match self {
+            Self::Anonymous(_) => (),
+            Self::Named(named, valued) => {
+                if named == name {
+                    *valued = value;
+                }
+            }
+            Self::Operation(vars, _) => {
+                vars.iter_mut()
+                    .for_each(|var| var.set_if_named(name, value));
             }
         }
     }
+}
 
-    fn value(&self) -> T
-    where
-        T: Copy,
-    {
+impl Variable<f64> {
+    fn value(&self) -> f64 {
         match self {
             Self::Anonymous(value) | Self::Named(_, value) => *value,
+            Self::Operation(vars, op) => {
+                let (lhs, rhs) = (vars[0].value(), vars[1].value());
+                match op {
+                    OpType::Add => lhs + rhs,
+                    OpType::Divide => {
+                        if rhs != 0.0 {
+                            lhs / rhs
+                        } else {
+                            0.0
+                        }
+                    }
+                    OpType::Multiply => lhs * rhs,
+                    OpType::Subtract => lhs - rhs,
+                }
+            }
+        }
+    }
+}
+
+impl Variable<u32> {
+    fn value(&self) -> u32 {
+        match self {
+            Self::Anonymous(value) | Self::Named(_, value) => *value,
+            Self::Operation(vars, op) => {
+                let (lhs, rhs) = (vars[0].value(), vars[1].value());
+                match op {
+                    OpType::Add => lhs.checked_add(rhs),
+                    OpType::Divide => lhs.checked_div(rhs),
+                    OpType::Multiply => lhs.checked_mul(rhs),
+                    OpType::Subtract => lhs.checked_sub(rhs),
+                }
+                .unwrap_or_default()
+            }
         }
     }
 }
