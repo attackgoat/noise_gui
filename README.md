@@ -23,6 +23,7 @@ A graphical user interface for [Noise-rs](https://github.com/Razaekel/noise-rs).
 - [x] Allow saving the graph project to a file[^1]
 - [x] Allow noise function export[^1]
 - [ ] Automatic `NoiseFn` cached values
+- [ ] Subroutine blocks, comment blocks, node descriptors, etc.
 - [x] WASM support using [Trunk](https://trunkrs.dev/)
 
 [^1]: Available on desktop only
