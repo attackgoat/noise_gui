@@ -13,7 +13,7 @@ eframe = { version = "0.24", default-features = false, features = [
     "persistence",
 ] }
 egui = "0.24"
-egui-snarl = { git = "https://github.com/zakarumych/egui-snarl", features = ["serde"], rev = "8c8d20b" }
+egui-snarl = { git = "https://github.com/zakarumych/egui-snarl", features = ["serde"], rev = "dabe4a3" }
 log = "0.4"
 noise = "0.8"
 ordered-float = "4.2"

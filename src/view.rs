@@ -14,8 +14,8 @@ use {
         Style, TextEdit, Ui, Vec2,
     },
     egui_snarl::{
-        ui::{InPin, OutPin, PinInfo, SnarlViewer},
-        Snarl,
+        ui::{PinInfo, SnarlViewer},
+        InPin, OutPin, Snarl,
     },
     log::debug,
     std::{cell::RefCell, collections::HashSet},

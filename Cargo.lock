@@ -874,7 +874,7 @@ dependencies = [
 [[package]]
 name = "egui-snarl"
 version = "0.1.1"
-source = "git+https://github.com/zakarumych/egui-snarl?rev=8c8d20b#8c8d20b1eb2f6e176ed28bedd26af06781cdb968"
+source = "git+https://github.com/zakarumych/egui-snarl?rev=dabe4a3#dabe4a3450aa510536f069d0ae98e22412f124cb"
 dependencies = [
  "egui",
  "serde",
