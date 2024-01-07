@@ -5,7 +5,7 @@ use {
         SelectExpr, SourceType, TerraceExpr, TransformExpr, TurbulenceExpr, Variable, WorleyExpr,
     },
     egui::TextureHandle,
-    egui_snarl::Snarl,
+    egui_snarl::{OutPinId, Snarl},
     noise::{
         BasicMulti as Fractal, Cylinders, Perlin as AnySeedable, RidgedMulti as RigidFractal,
         Turbulence, Worley,
@@ -24,7 +24,6 @@ pub struct BlendNode {
 
     pub input_node_indices: [Option<usize>; 2],
     pub control_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 }
 
 impl BlendNode {
@@ -53,8 +52,6 @@ impl BlendNode {
 pub struct CheckerboardNode {
     pub image: Image,
 
-    pub output_node_indices: HashSet<usize>,
-
     pub size: NodeValue<u32>,
 }
 
@@ -62,7 +59,6 @@ impl Default for CheckerboardNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
-            output_node_indices: Default::default(),
             size: NodeValue::Value(0), // TODO: Checkerboard::DEFAULT_SIZE is private!
         }
     }
@@ -73,7 +69,6 @@ pub struct ClampNode {
     pub image: Image,
 
     pub input_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 
     pub lower_bound: NodeValue<f64>,
     pub upper_bound: NodeValue<f64>,
@@ -97,7 +92,6 @@ pub struct CombinerNode {
     pub image: Image,
 
     pub input_node_indices: [Option<usize>; 2],
-    pub output_node_indices: HashSet<usize>,
 }
 
 impl CombinerNode {
@@ -119,8 +113,6 @@ impl CombinerNode {
 pub struct ConstantNode<T> {
     pub name: String,
 
-    pub output_node_indices: HashSet<usize>,
-
     pub value: T,
 }
 
@@ -131,7 +123,6 @@ where
     fn default() -> Self {
         Self {
             name: "name".to_owned(),
-            output_node_indices: Default::default(),
             value: Default::default(),
         }
     }
@@ -140,7 +131,6 @@ where
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ConstantOpNode<T> {
     pub inputs: [NodeValue<T>; 2],
-    pub output_node_indices: HashSet<usize>,
 
     pub op_ty: OpType,
 }
@@ -152,7 +142,6 @@ impl<T> ConstantOpNode<T> {
     {
         Self {
             inputs: [NodeValue::Value(value); 2],
-            output_node_indices: Default::default(),
             op_ty,
         }
     }
@@ -174,8 +163,6 @@ impl ConstantOpNode<f64> {
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ControlPointNode {
-    pub output_node_indices: HashSet<usize>,
-
     pub input: NodeValue<f64>,
     pub output: NodeValue<f64>,
 }
@@ -185,7 +172,6 @@ pub struct CurveNode {
     pub image: Image,
 
     pub input_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 
     pub control_point_node_indices: Vec<Option<usize>>,
 }
@@ -222,8 +208,6 @@ impl CurveNode {
 pub struct CylindersNode {
     pub image: Image,
 
-    pub output_node_indices: HashSet<usize>,
-
     pub frequency: NodeValue<f64>,
 }
 
@@ -231,7 +215,6 @@ impl Default for CylindersNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
-            output_node_indices: Default::default(),
             frequency: NodeValue::Value(Cylinders::DEFAULT_FREQUENCY),
         }
     }
@@ -242,7 +225,6 @@ pub struct DisplaceNode {
     pub image: Image,
 
     pub input_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 
     pub axes: [Option<usize>; 4],
 }
@@ -273,7 +255,6 @@ pub struct ExponentNode {
     pub image: Image,
 
     pub input_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 
     pub exponent: NodeValue<f64>,
 }
@@ -295,7 +276,6 @@ impl Default for ExponentNode {
         Self {
             image: Default::default(),
             input_node_idx: Default::default(),
-            output_node_indices: Default::default(),
             exponent: NodeValue::Value(1.0),
         }
     }
@@ -304,8 +284,6 @@ impl Default for ExponentNode {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FractalNode {
     pub image: Image,
-
-    pub output_node_indices: HashSet<usize>,
 
     pub source_ty: SourceType,
     pub seed: NodeValue<u32>,
@@ -332,7 +310,6 @@ impl Default for FractalNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
-            output_node_indices: Default::default(),
             source_ty: Default::default(),
             seed: NodeValue::Value(Fractal::<AnySeedable>::DEFAULT_SEED),
             octaves: NodeValue::Value(Fractal::<AnySeedable>::DEFAULT_OCTAVES as _),
@@ -346,8 +323,6 @@ impl Default for FractalNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct GeneratorNode {
     pub image: Image,
-
-    pub output_node_indices: HashSet<usize>,
 
     pub seed: NodeValue<u32>,
 }
@@ -905,328 +880,6 @@ impl NoiseNode {
         }
     }
 
-    pub fn output_node_indices(&self) -> &HashSet<usize> {
-        match self {
-            Self::Abs(UnaryNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Add(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::BasicMulti(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Billow(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Blend(BlendNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Checkerboard(CheckerboardNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Clamp(ClampNode {
-                output_node_indices,
-                ..
-            })
-            | Self::ControlPoint(ControlPointNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Curve(CurveNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Cylinders(CylindersNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Displace(DisplaceNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Exponent(ExponentNode {
-                output_node_indices,
-                ..
-            })
-            | Self::F64(ConstantNode {
-                output_node_indices,
-                ..
-            })
-            | Self::F64Operation(ConstantOpNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Fbm(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::HybridMulti(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Max(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Min(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Multiply(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Negate(UnaryNode {
-                output_node_indices,
-                ..
-            })
-            | Self::OpenSimplex(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Operation(ConstantOpNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Perlin(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::PerlinSurflet(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Power(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::RigidMulti(RigidFractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::RotatePoint(TransformNode {
-                output_node_indices,
-                ..
-            })
-            | Self::ScaleBias(ScaleBiasNode {
-                output_node_indices,
-                ..
-            })
-            | Self::ScalePoint(TransformNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Select(SelectNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Simplex(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::SuperSimplex(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Terrace(TerraceNode {
-                output_node_indices,
-                ..
-            })
-            | Self::TranslatePoint(TransformNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Turbulence(TurbulenceNode {
-                output_node_indices,
-                ..
-            })
-            | Self::U32(ConstantNode {
-                output_node_indices,
-                ..
-            })
-            | Self::U32Operation(ConstantOpNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Value(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Worley(WorleyNode {
-                output_node_indices,
-                ..
-            }) => output_node_indices,
-        }
-    }
-
-    pub fn output_node_indices_mut(&mut self) -> &mut HashSet<usize> {
-        match self {
-            Self::Abs(UnaryNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Add(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::BasicMulti(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Billow(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Blend(BlendNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Checkerboard(CheckerboardNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Clamp(ClampNode {
-                output_node_indices,
-                ..
-            })
-            | Self::ControlPoint(ControlPointNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Curve(CurveNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Cylinders(CylindersNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Displace(DisplaceNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Exponent(ExponentNode {
-                output_node_indices,
-                ..
-            })
-            | Self::F64(ConstantNode {
-                output_node_indices,
-                ..
-            })
-            | Self::F64Operation(ConstantOpNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Fbm(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::HybridMulti(FractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Max(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Min(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Multiply(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Negate(UnaryNode {
-                output_node_indices,
-                ..
-            })
-            | Self::OpenSimplex(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Operation(ConstantOpNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Perlin(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::PerlinSurflet(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Power(CombinerNode {
-                output_node_indices,
-                ..
-            })
-            | Self::RigidMulti(RigidFractalNode {
-                output_node_indices,
-                ..
-            })
-            | Self::RotatePoint(TransformNode {
-                output_node_indices,
-                ..
-            })
-            | Self::ScaleBias(ScaleBiasNode {
-                output_node_indices,
-                ..
-            })
-            | Self::ScalePoint(TransformNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Select(SelectNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Simplex(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::SuperSimplex(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Terrace(TerraceNode {
-                output_node_indices,
-                ..
-            })
-            | Self::TranslatePoint(TransformNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Turbulence(TurbulenceNode {
-                output_node_indices,
-                ..
-            })
-            | Self::U32(ConstantNode {
-                output_node_indices,
-                ..
-            })
-            | Self::U32Operation(ConstantOpNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Value(GeneratorNode {
-                output_node_indices,
-                ..
-            })
-            | Self::Worley(WorleyNode {
-                output_node_indices,
-                ..
-            }) => output_node_indices,
-        }
-    }
-
     pub fn propagate_f64_from_tuple_op(node_idx: usize, snarl: &mut Snarl<Self>) {
         thread_local! {
             static CHILD_NODE_INDICES: RefCell<Option<HashSet<usize>>> = RefCell::new(Some(Default::default()));
@@ -1239,10 +892,20 @@ impl NoiseNode {
 
         while let Some(node_idx) = node_indices.pop() {
             if child_node_indices.insert(node_idx) {
+                node_indices.extend(
+                    snarl
+                        .out_pin(OutPinId {
+                            node: node_idx,
+                            output: 0,
+                        })
+                        .remotes
+                        .iter()
+                        .map(|remote| remote.node),
+                );
+
                 if let node @ Self::Operation(_) = snarl.get_node_mut(node_idx) {
                     let op = node.as_const_op_tuple().unwrap().clone();
                     node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
-                    node_indices.extend(op.output_node_indices.iter().copied());
 
                     *node = NoiseNode::F64Operation(ConstantOpNode {
                         inputs: op
@@ -1258,7 +921,6 @@ impl NoiseNode {
                             .collect::<Vec<_>>()
                             .try_into()
                             .unwrap(),
-                        output_node_indices: op.output_node_indices,
                         op_ty: op.op_ty,
                     });
                 } else {
@@ -1287,7 +949,16 @@ impl NoiseNode {
                 if let node @ Self::F64Operation(_) = snarl.get_node(node_idx) {
                     let op = node.as_const_op_f64().unwrap();
                     node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
-                    node_indices.extend(op.output_node_indices.iter().copied());
+                    node_indices.extend(
+                        snarl
+                            .out_pin(OutPinId {
+                                node: node_idx,
+                                output: 0,
+                            })
+                            .remotes
+                            .iter()
+                            .map(|remote| remote.node),
+                    );
                 } else {
                     child_node_indices.clear();
                     CHILD_NODE_INDICES.set(Some(child_node_indices));
@@ -1318,7 +989,6 @@ impl NoiseNode {
                     .collect::<Vec<_>>()
                     .try_into()
                     .unwrap(),
-                output_node_indices: op.output_node_indices,
                 op_ty: op.op_ty,
             });
         }
@@ -1342,7 +1012,16 @@ impl NoiseNode {
                 if let node @ Self::U32Operation(_) = snarl.get_node(node_idx) {
                     let op = node.as_const_op_u32().unwrap();
                     node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
-                    node_indices.extend(op.output_node_indices.iter().copied());
+                    node_indices.extend(
+                        snarl
+                            .out_pin(OutPinId {
+                                node: node_idx,
+                                output: 0,
+                            })
+                            .remotes
+                            .iter()
+                            .map(|remote| remote.node),
+                    );
                 } else {
                     child_node_indices.clear();
                     CHILD_NODE_INDICES.set(Some(child_node_indices));
@@ -1373,7 +1052,6 @@ impl NoiseNode {
                     .collect::<Vec<_>>()
                     .try_into()
                     .unwrap(),
-                output_node_indices: op.output_node_indices,
                 op_ty: op.op_ty,
             });
         }
@@ -1394,10 +1072,20 @@ impl NoiseNode {
 
         while let Some(node_idx) = node_indices.pop() {
             if child_node_indices.insert(node_idx) {
+                node_indices.extend(
+                    snarl
+                        .out_pin(OutPinId {
+                            node: node_idx,
+                            output: 0,
+                        })
+                        .remotes
+                        .iter()
+                        .map(|remote| remote.node),
+                );
+
                 if let node @ Self::Operation(_) = snarl.get_node_mut(node_idx) {
                     let op = node.as_const_op_tuple().unwrap().clone();
                     node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
-                    node_indices.extend(op.output_node_indices.iter().copied());
 
                     *node = NoiseNode::U32Operation(ConstantOpNode {
                         inputs: op
@@ -1413,7 +1101,6 @@ impl NoiseNode {
                             .collect::<Vec<_>>()
                             .try_into()
                             .unwrap(),
-                        output_node_indices: op.output_node_indices,
                         op_ty: op.op_ty,
                     });
                 } else {
@@ -1431,8 +1118,6 @@ impl NoiseNode {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RigidFractalNode {
     pub image: Image,
-
-    pub output_node_indices: HashSet<usize>,
 
     pub source_ty: SourceType,
     pub seed: NodeValue<u32>,
@@ -1461,7 +1146,6 @@ impl Default for RigidFractalNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
-            output_node_indices: Default::default(),
             source_ty: Default::default(),
             seed: NodeValue::Value(RigidFractal::<AnySeedable>::DEFAULT_SEED),
             octaves: NodeValue::Value(RigidFractal::<AnySeedable>::DEFAULT_OCTAVE_COUNT as _),
@@ -1478,7 +1162,6 @@ pub struct ScaleBiasNode {
     pub image: Image,
 
     pub input_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 
     pub scale: NodeValue<f64>,
     pub bias: NodeValue<f64>,
@@ -1503,7 +1186,6 @@ pub struct SelectNode {
 
     pub input_node_indices: [Option<usize>; 2],
     pub control_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 
     pub lower_bound: NodeValue<f64>,
     pub upper_bound: NodeValue<f64>,
@@ -1541,7 +1223,6 @@ impl Default for SelectNode {
             image: Default::default(),
             input_node_indices: Default::default(),
             control_node_idx: Default::default(),
-            output_node_indices: Default::default(),
             lower_bound: NodeValue::Value(0.0),
             upper_bound: NodeValue::Value(1.0),
             falloff: NodeValue::Value(0.0),
@@ -1560,7 +1241,6 @@ pub struct TerraceNode {
     pub image: Image,
 
     pub input_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 
     pub inverted: bool,
     pub control_point_node_indices: Vec<Option<usize>>,
@@ -1595,7 +1275,6 @@ pub struct TransformNode {
     pub image: Image,
 
     pub input_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 
     pub axes: [NodeValue<f64>; 4],
 }
@@ -1605,7 +1284,6 @@ impl TransformNode {
         Self {
             image: Default::default(),
             input_node_idx: Default::default(),
-            output_node_indices: Default::default(),
             axes: [NodeValue::Value(value); 4],
         }
     }
@@ -1640,7 +1318,6 @@ pub struct TurbulenceNode {
     pub image: Image,
 
     pub input_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 
     pub source_ty: SourceType,
     pub seed: NodeValue<u32>,
@@ -1670,7 +1347,6 @@ impl Default for TurbulenceNode {
         Self {
             image: Default::default(),
             input_node_idx: Default::default(),
-            output_node_indices: Default::default(),
             source_ty: Default::default(),
             seed: NodeValue::Value(Turbulence::<AnySeedable, AnySeedable>::DEFAULT_SEED),
             frequency: NodeValue::Value(Turbulence::<AnySeedable, AnySeedable>::DEFAULT_FREQUENCY),
@@ -1687,7 +1363,6 @@ pub struct UnaryNode {
     pub image: Image,
 
     pub input_node_idx: Option<usize>,
-    pub output_node_indices: HashSet<usize>,
 }
 
 impl UnaryNode {
@@ -1701,8 +1376,6 @@ impl UnaryNode {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WorleyNode {
     pub image: Image,
-
-    pub output_node_indices: HashSet<usize>,
 
     pub seed: NodeValue<u32>,
     pub frequency: NodeValue<f64>,
@@ -1725,7 +1398,6 @@ impl Default for WorleyNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
-            output_node_indices: Default::default(),
             seed: NodeValue::Value(Worley::DEFAULT_SEED),
             frequency: NodeValue::Value(Worley::DEFAULT_FREQUENCY),
             distance_fn: DistanceFunction::Euclidean,

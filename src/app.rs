@@ -11,7 +11,7 @@ use {
         github_link_file, warn_if_debug_build, Align, CentralPanel, Color32, ColorImage, Context,
         Id, Layout,
     },
-    egui_snarl::{ui::SnarlStyle, Snarl},
+    egui_snarl::{ui::SnarlStyle, OutPinId, Snarl},
     log::debug,
     std::{
         cell::RefCell,
@@ -212,10 +212,13 @@ impl App {
             while let Some(node_idx) = temp_node_indices.pop() {
                 for node_idx in self
                     .snarl
-                    .get_node(node_idx)
-                    .output_node_indices()
+                    .out_pin(OutPinId {
+                        node: node_idx,
+                        output: 0,
+                    })
+                    .remotes
                     .iter()
-                    .copied()
+                    .map(|remote| remote.node)
                 {
                     child_node_indices.insert(node_idx);
                     temp_node_indices.push(node_idx);
