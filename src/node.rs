@@ -5,7 +5,7 @@ use {
         SelectExpr, SourceType, TerraceExpr, TransformExpr, TurbulenceExpr, Variable, WorleyExpr,
     },
     egui::TextureHandle,
-    egui_snarl::{OutPinId, Snarl},
+    egui_snarl::{InPinId, OutPinId, Snarl},
     noise::{
         BasicMulti as Fractal, Cylinders, Perlin as AnySeedable, RidgedMulti as RigidFractal,
         Turbulence, Worley,
@@ -18,32 +18,66 @@ fn constant(value: f64) -> Box<Expr> {
     Box::new(Expr::Constant(Variable::Anonymous(value)))
 }
 
+fn in_pin_expr(snarl: &Snarl<NoiseNode>, node_idx: usize, input: usize) -> Option<Box<Expr>> {
+    map_in_pin(snarl, node_idx, input, |node_idx| {
+        Box::new(snarl.get_node(node_idx).expr(node_idx, snarl))
+    })
+}
+
+fn in_pin_expr_or_const(
+    snarl: &Snarl<NoiseNode>,
+    node_idx: usize,
+    input: usize,
+    value: f64,
+) -> Box<Expr> {
+    in_pin_expr_or_else(snarl, node_idx, input, || constant(value))
+}
+
+fn in_pin_expr_or_else<F>(
+    snarl: &Snarl<NoiseNode>,
+    node_idx: usize,
+    input: usize,
+    f: F,
+) -> Box<Expr>
+where
+    F: FnOnce() -> Box<Expr>,
+{
+    in_pin_expr(snarl, node_idx, input).unwrap_or_else(f)
+}
+
+fn map_in_pin<T, U, F>(snarl: &Snarl<T>, node_idx: usize, input: usize, f: F) -> Option<U>
+where
+    F: FnOnce(usize) -> U,
+{
+    let remotes = snarl
+        .in_pin(InPinId {
+            node: node_idx,
+            input,
+        })
+        .remotes;
+
+    debug_assert!(
+        remotes.len() <= 1,
+        "Input pins may only be connected to zero or one nodes"
+    );
+
+    remotes.first().map(|remote| f(remote.node))
+}
+
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct BlendNode {
     pub image: Image,
-
-    pub input_node_indices: [Option<usize>; 2],
-    pub control_node_idx: Option<usize>,
 }
 
 impl BlendNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> BlendExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> BlendExpr {
         BlendExpr {
-            sources: self
-                .input_node_indices
-                .iter()
-                .map(|node_idx| {
-                    node_idx
-                        .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                        .unwrap_or_else(|| constant(0.0))
-                })
+            sources: (0..2)
+                .map(|input| in_pin_expr_or_const(snarl, node_idx, input, 0.0))
                 .collect::<Vec<_>>()
                 .try_into()
                 .unwrap(),
-            control: self
-                .control_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
+            control: in_pin_expr_or_const(snarl, node_idx, 2, 0.0),
         }
     }
 }
@@ -68,19 +102,14 @@ impl Default for CheckerboardNode {
 pub struct ClampNode {
     pub image: Image,
 
-    pub input_node_idx: Option<usize>,
-
     pub lower_bound: NodeValue<f64>,
     pub upper_bound: NodeValue<f64>,
 }
 
 impl ClampNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> ClampExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> ClampExpr {
         ClampExpr {
-            source: self
-                .input_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
+            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             lower_bound: self.lower_bound.var(snarl),
             upper_bound: self.upper_bound.var(snarl),
         }
@@ -90,19 +119,17 @@ impl ClampNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct CombinerNode {
     pub image: Image,
-
-    pub input_node_indices: [Option<usize>; 2],
 }
 
 impl CombinerNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>, default_value: f64) -> [Box<Expr>; 2] {
-        self.input_node_indices
-            .iter()
-            .map(|node_idx| {
-                node_idx
-                    .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                    .unwrap_or_else(|| constant(default_value))
-            })
+    fn expr(
+        &self,
+        node_idx: usize,
+        snarl: &Snarl<NoiseNode>,
+        default_value: f64,
+    ) -> [Box<Expr>; 2] {
+        (0..2)
+            .map(|input| in_pin_expr_or_const(snarl, node_idx, input, default_value))
             .collect::<Vec<_>>()
             .try_into()
             .unwrap()
@@ -171,18 +198,13 @@ pub struct ControlPointNode {
 pub struct CurveNode {
     pub image: Image,
 
-    pub input_node_idx: Option<usize>,
-
     pub control_point_node_indices: Vec<Option<usize>>,
 }
 
 impl CurveNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> CurveExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> CurveExpr {
         CurveExpr {
-            source: self
-                .input_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
+            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             control_points: self
                 .control_point_node_indices
                 .iter()
@@ -223,26 +245,14 @@ impl Default for CylindersNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct DisplaceNode {
     pub image: Image,
-
-    pub input_node_idx: Option<usize>,
-
-    pub axes: [Option<usize>; 4],
 }
 
 impl DisplaceNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> DisplaceExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> DisplaceExpr {
         DisplaceExpr {
-            source: self
-                .input_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
-            axes: self
-                .axes
-                .iter()
-                .map(|axis| {
-                    axis.map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                        .unwrap_or_else(|| constant(0.0))
-                })
+            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
+            axes: (1..5)
+                .map(|input| in_pin_expr_or_const(snarl, node_idx, input, 0.0))
                 .collect::<Vec<_>>()
                 .try_into()
                 .unwrap(),
@@ -254,18 +264,13 @@ impl DisplaceNode {
 pub struct ExponentNode {
     pub image: Image,
 
-    pub input_node_idx: Option<usize>,
-
     pub exponent: NodeValue<f64>,
 }
 
 impl ExponentNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> ExponentExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> ExponentExpr {
         ExponentExpr {
-            source: self
-                .input_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
+            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             exponent: self.exponent.var(snarl),
         }
     }
@@ -275,7 +280,6 @@ impl Default for ExponentNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
-            input_node_idx: Default::default(),
             exponent: NodeValue::Value(1.0),
         }
     }
@@ -482,14 +486,6 @@ pub enum NoiseNode {
 }
 
 impl NoiseNode {
-    pub fn as_blend_mut(&mut self) -> Option<&mut BlendNode> {
-        if let Self::Blend(node) = self {
-            Some(node)
-        } else {
-            None
-        }
-    }
-
     pub fn as_checkerboard_mut(&mut self) -> Option<&mut CheckerboardNode> {
         if let Self::Checkerboard(node) = self {
             Some(node)
@@ -500,19 +496,6 @@ impl NoiseNode {
 
     pub fn as_clamp_mut(&mut self) -> Option<&mut ClampNode> {
         if let Self::Clamp(node) = self {
-            Some(node)
-        } else {
-            None
-        }
-    }
-
-    pub fn as_combiner_mut(&mut self) -> Option<&mut CombinerNode> {
-        if let Self::Add(node)
-        | Self::Max(node)
-        | Self::Min(node)
-        | Self::Multiply(node)
-        | Self::Power(node) = self
-        {
             Some(node)
         } else {
             None
@@ -593,14 +576,6 @@ impl NoiseNode {
 
     pub fn as_cylinders_mut(&mut self) -> Option<&mut CylindersNode> {
         if let Self::Cylinders(node) = self {
-            Some(node)
-        } else {
-            None
-        }
-    }
-
-    pub fn as_displace_mut(&mut self) -> Option<&mut DisplaceNode> {
-        if let Self::Displace(node) = self {
             Some(node)
         } else {
             None
@@ -690,14 +665,6 @@ impl NoiseNode {
         }
     }
 
-    pub fn as_unary_mut(&mut self) -> Option<&mut UnaryNode> {
-        if let Self::Abs(node) | Self::Negate(node) = self {
-            Some(node)
-        } else {
-            None
-        }
-    }
-
     pub fn as_worley_mut(&mut self) -> Option<&mut WorleyNode> {
         if let Self::Worley(node) = self {
             Some(node)
@@ -745,41 +712,41 @@ impl NoiseNode {
         }
     }
 
-    pub fn expr(&self, snarl: &Snarl<Self>) -> Expr {
+    pub fn expr(&self, node_idx: usize, snarl: &Snarl<Self>) -> Expr {
         match self {
-            Self::Abs(node) => Expr::Abs(node.expr(snarl)),
-            Self::Add(node) => Expr::Add(node.expr(snarl, 0.0)),
+            Self::Abs(node) => Expr::Abs(node.expr(node_idx, snarl)),
+            Self::Add(node) => Expr::Add(node.expr(node_idx, snarl, 0.0)),
             Self::BasicMulti(node) => Expr::BasicMulti(node.expr(snarl)),
             Self::Billow(node) => Expr::Billow(node.expr(snarl)),
-            Self::Blend(node) => Expr::Blend(node.expr(snarl)),
+            Self::Blend(node) => Expr::Blend(node.expr(node_idx, snarl)),
             Self::Checkerboard(node) => Expr::Checkerboard(node.size.var(snarl)),
-            Self::Clamp(node) => Expr::Clamp(node.expr(snarl)),
-            Self::Curve(node) => Expr::Curve(node.expr(snarl)),
+            Self::Clamp(node) => Expr::Clamp(node.expr(node_idx, snarl)),
+            Self::Curve(node) => Expr::Curve(node.expr(node_idx, snarl)),
             Self::Cylinders(node) => Expr::Cylinders(node.frequency.var(snarl)),
-            Self::Displace(node) => Expr::Displace(node.expr(snarl)),
-            Self::Exponent(node) => Expr::Exponent(node.expr(snarl)),
+            Self::Displace(node) => Expr::Displace(node.expr(node_idx, snarl)),
+            Self::Exponent(node) => Expr::Exponent(node.expr(node_idx, snarl)),
             Self::F64(node) => Expr::Constant(Variable::Named(node.name.clone(), node.value)),
             Self::F64Operation(node) => Expr::Constant(node.var(snarl)),
             Self::Fbm(node) => Expr::Fbm(node.expr(snarl)),
             Self::HybridMulti(node) => Expr::HybridMulti(node.expr(snarl)),
-            Self::Max(node) => Expr::Max(node.expr(snarl, 1.0)),
-            Self::Min(node) => Expr::Min(node.expr(snarl, -1.0)),
-            Self::Multiply(node) => Expr::Multiply(node.expr(snarl, 1.0)),
-            Self::Negate(node) => Expr::Negate(node.expr(snarl)),
+            Self::Max(node) => Expr::Max(node.expr(node_idx, snarl, 1.0)),
+            Self::Min(node) => Expr::Min(node.expr(node_idx, snarl, -1.0)),
+            Self::Multiply(node) => Expr::Multiply(node.expr(node_idx, snarl, 1.0)),
+            Self::Negate(node) => Expr::Negate(node.expr(node_idx, snarl)),
             Self::OpenSimplex(node) => Expr::OpenSimplex(node.seed.var(snarl)),
             Self::Perlin(node) => Expr::Perlin(node.seed.var(snarl)),
             Self::PerlinSurflet(node) => Expr::PerlinSurflet(node.seed.var(snarl)),
-            Self::Power(node) => Expr::Power(node.expr(snarl, 1.0)),
+            Self::Power(node) => Expr::Power(node.expr(node_idx, snarl, 1.0)),
             Self::RigidMulti(node) => Expr::RidgedMulti(node.expr(snarl)),
-            Self::RotatePoint(node) => Expr::RotatePoint(node.expr(snarl)),
-            Self::ScaleBias(node) => Expr::ScaleBias(node.expr(snarl)),
-            Self::ScalePoint(node) => Expr::ScalePoint(node.expr(snarl)),
-            Self::Select(node) => Expr::Select(node.expr(snarl)),
+            Self::RotatePoint(node) => Expr::RotatePoint(node.expr(node_idx, snarl)),
+            Self::ScaleBias(node) => Expr::ScaleBias(node.expr(node_idx, snarl)),
+            Self::ScalePoint(node) => Expr::ScalePoint(node.expr(node_idx, snarl)),
+            Self::Select(node) => Expr::Select(node.expr(node_idx, snarl)),
             Self::Simplex(node) => Expr::Simplex(node.seed.var(snarl)),
             Self::SuperSimplex(node) => Expr::SuperSimplex(node.seed.var(snarl)),
-            Self::Terrace(node) => Expr::Terrace(node.expr(snarl)),
-            Self::TranslatePoint(node) => Expr::TranslatePoint(node.expr(snarl)),
-            Self::Turbulence(node) => Expr::Turbulence(node.expr(snarl)),
+            Self::Terrace(node) => Expr::Terrace(node.expr(node_idx, snarl)),
+            Self::TranslatePoint(node) => Expr::TranslatePoint(node.expr(node_idx, snarl)),
+            Self::Turbulence(node) => Expr::Turbulence(node.expr(node_idx, snarl)),
             Self::Value(node) => Expr::Value(node.seed.var(snarl)),
             Self::Worley(node) => Expr::Worley(node.expr(snarl)),
             Self::ControlPoint(_) | Self::Operation(_) | Self::U32(_) | Self::U32Operation(_) => {
@@ -1161,19 +1128,14 @@ impl Default for RigidFractalNode {
 pub struct ScaleBiasNode {
     pub image: Image,
 
-    pub input_node_idx: Option<usize>,
-
     pub scale: NodeValue<f64>,
     pub bias: NodeValue<f64>,
 }
 
 impl ScaleBiasNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> ScaleBiasExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> ScaleBiasExpr {
         ScaleBiasExpr {
-            source: self
-                .input_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
+            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             scale: self.scale.var(snarl),
             bias: self.bias.var(snarl),
         }
@@ -1184,32 +1146,20 @@ impl ScaleBiasNode {
 pub struct SelectNode {
     pub image: Image,
 
-    pub input_node_indices: [Option<usize>; 2],
-    pub control_node_idx: Option<usize>,
-
     pub lower_bound: NodeValue<f64>,
     pub upper_bound: NodeValue<f64>,
     pub falloff: NodeValue<f64>,
 }
 
 impl SelectNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> SelectExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> SelectExpr {
         SelectExpr {
-            sources: self
-                .input_node_indices
-                .iter()
-                .map(|node_idx| {
-                    node_idx
-                        .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                        .unwrap_or_else(|| constant(0.0))
-                })
+            sources: (0..2)
+                .map(|input| in_pin_expr_or_const(snarl, node_idx, input, 0.0))
                 .collect::<Vec<_>>()
                 .try_into()
                 .unwrap(),
-            control: self
-                .control_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
+            control: in_pin_expr_or_const(snarl, node_idx, 2, 0.0),
             lower_bound: self.lower_bound.var(snarl),
             upper_bound: self.upper_bound.var(snarl),
             falloff: self.falloff.var(snarl),
@@ -1221,8 +1171,6 @@ impl Default for SelectNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
-            input_node_indices: Default::default(),
-            control_node_idx: Default::default(),
             lower_bound: NodeValue::Value(0.0),
             upper_bound: NodeValue::Value(1.0),
             falloff: NodeValue::Value(0.0),
@@ -1240,19 +1188,14 @@ impl Default for SourceType {
 pub struct TerraceNode {
     pub image: Image,
 
-    pub input_node_idx: Option<usize>,
-
     pub inverted: bool,
     pub control_point_node_indices: Vec<Option<usize>>,
 }
 
 impl TerraceNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> TerraceExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> TerraceExpr {
         TerraceExpr {
-            source: self
-                .input_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
+            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             inverted: self.inverted,
             control_points: self
                 .control_point_node_indices
@@ -1274,8 +1217,6 @@ impl TerraceNode {
 pub struct TransformNode {
     pub image: Image,
 
-    pub input_node_idx: Option<usize>,
-
     pub axes: [NodeValue<f64>; 4],
 }
 
@@ -1283,17 +1224,13 @@ impl TransformNode {
     fn new(value: f64) -> Self {
         Self {
             image: Default::default(),
-            input_node_idx: Default::default(),
             axes: [NodeValue::Value(value); 4],
         }
     }
 
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> TransformExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> TransformExpr {
         TransformExpr {
-            source: self
-                .input_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
+            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             axes: self
                 .axes
                 .iter()
@@ -1317,8 +1254,6 @@ impl TransformNode {
 pub struct TurbulenceNode {
     pub image: Image,
 
-    pub input_node_idx: Option<usize>,
-
     pub source_ty: SourceType,
     pub seed: NodeValue<u32>,
     pub frequency: NodeValue<f64>,
@@ -1327,12 +1262,9 @@ pub struct TurbulenceNode {
 }
 
 impl TurbulenceNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> TurbulenceExpr {
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> TurbulenceExpr {
         TurbulenceExpr {
-            source: self
-                .input_node_idx
-                .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-                .unwrap_or_else(|| constant(0.0)),
+            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             source_ty: self.source_ty,
             seed: self.seed.var(snarl),
             frequency: self.frequency.var(snarl),
@@ -1346,7 +1278,6 @@ impl Default for TurbulenceNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
-            input_node_idx: Default::default(),
             source_ty: Default::default(),
             seed: NodeValue::Value(Turbulence::<AnySeedable, AnySeedable>::DEFAULT_SEED),
             frequency: NodeValue::Value(Turbulence::<AnySeedable, AnySeedable>::DEFAULT_FREQUENCY),
@@ -1361,15 +1292,11 @@ impl Default for TurbulenceNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct UnaryNode {
     pub image: Image,
-
-    pub input_node_idx: Option<usize>,
 }
 
 impl UnaryNode {
-    fn expr(&self, snarl: &Snarl<NoiseNode>) -> Box<Expr> {
-        self.input_node_idx
-            .map(|node_idx| Box::new(snarl.get_node(node_idx).expr(snarl)))
-            .unwrap_or_else(|| constant(0.0))
+    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> Box<Expr> {
+        in_pin_expr_or_const(snarl, node_idx, 0, 0.0)
     }
 }
 

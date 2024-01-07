@@ -264,10 +264,10 @@ impl App {
             if let Some(image) = node.image() {
                 debug!("Updating image for #{node_idx}");
 
-                self.node_exprs
-                    .write()
-                    .unwrap()
-                    .insert(node_idx, (image.version, Arc::new(node.expr(&self.snarl))));
+                self.node_exprs.write().unwrap().insert(
+                    node_idx,
+                    (image.version, Arc::new(node.expr(node_idx, &self.snarl))),
+                );
 
                 // We request coordinate chunks from the threads using pre-shuffled data so that
                 // all the responses come back in a static-like pattern and not row by row
