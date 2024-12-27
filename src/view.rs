@@ -14,7 +14,7 @@ use {
         Style, TextEdit, Ui, Vec2,
     },
     egui_snarl::{
-        ui::{PinInfo, SnarlViewer},
+        ui::{CustomPinShape, PinInfo, SnarlViewer},
         InPin, NodeId, OutPin, OutPinId, Snarl,
     },
     log::debug,
@@ -135,7 +135,7 @@ impl<'a> Viewer<'a> {
         PinInfo::default()
             .with_fill(Color32::from_gray(192))
             .with_stroke(Stroke::new(1.5, Color32::from_white_alpha(192)))
-            .with_shape(egui_snarl::ui::PinShape::Custom(Box::new(
+            .with_shape(egui_snarl::ui::PinShape::Custom(CustomPinShape::new(
                 move |painter, rect, _fill, stroke| {
                     const S: f32 = 1.0;
                     const A: Vec2 = vec2(0.2 * S, 0.7 * S);
@@ -236,7 +236,7 @@ impl<'a> Viewer<'a> {
                 1.5,
                 Color32::from_rgba_unmultiplied(r, g, b, 192),
             ))
-            .with_shape(egui_snarl::ui::PinShape::Custom(Box::new(
+            .with_shape(egui_snarl::ui::PinShape::Custom(CustomPinShape::new(
                 move |painter, rect, _fill, stroke| {
                     const S: f32 = 1.0;
                     const A: Vec2 = vec2(0.64 * S, 0.07 * S);
