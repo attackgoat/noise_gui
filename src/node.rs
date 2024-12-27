@@ -18,40 +18,40 @@ fn constant(value: f64) -> Box<Expr> {
     Box::new(Expr::Constant(Variable::Anonymous(value)))
 }
 
-fn in_pin_expr(snarl: &Snarl<NoiseNode>, node_idx: NodeId, input: usize) -> Option<Box<Expr>> {
-    map_in_pin(snarl, node_idx, input, |node_idx| {
-        Box::new(snarl.get_node(node_idx).unwrap().expr(node_idx, snarl))
+fn in_pin_expr(snarl: &Snarl<NoiseNode>, node_id: NodeId, input: usize) -> Option<Box<Expr>> {
+    map_in_pin(snarl, node_id, input, |node_id| {
+        Box::new(snarl.get_node(node_id).unwrap().expr(node_id, snarl))
     })
 }
 
 fn in_pin_expr_or_const(
     snarl: &Snarl<NoiseNode>,
-    node_idx: NodeId,
+    node_id: NodeId,
     input: usize,
     value: f64,
 ) -> Box<Expr> {
-    in_pin_expr_or_else(snarl, node_idx, input, || constant(value))
+    in_pin_expr_or_else(snarl, node_id, input, || constant(value))
 }
 
 fn in_pin_expr_or_else<F>(
     snarl: &Snarl<NoiseNode>,
-    node_idx: NodeId,
+    node_id: NodeId,
     input: usize,
     f: F,
 ) -> Box<Expr>
 where
     F: FnOnce() -> Box<Expr>,
 {
-    in_pin_expr(snarl, node_idx, input).unwrap_or_else(f)
+    in_pin_expr(snarl, node_id, input).unwrap_or_else(f)
 }
 
-fn map_in_pin<T, U, F>(snarl: &Snarl<T>, node_idx: NodeId, input: usize, f: F) -> Option<U>
+fn map_in_pin<T, U, F>(snarl: &Snarl<T>, node_id: NodeId, input: usize, f: F) -> Option<U>
 where
     F: FnOnce(NodeId) -> U,
 {
     let remotes = snarl
         .in_pin(InPinId {
-            node: node_idx,
+            node: node_id,
             input,
         })
         .remotes;
@@ -70,14 +70,14 @@ pub struct BlendNode {
 }
 
 impl BlendNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> BlendExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> BlendExpr {
         BlendExpr {
             sources: (0..2)
-                .map(|input| in_pin_expr_or_const(snarl, node_idx, input, 0.0))
+                .map(|input| in_pin_expr_or_const(snarl, node_id, input, 0.0))
                 .collect::<Vec<_>>()
                 .try_into()
                 .unwrap(),
-            control: in_pin_expr_or_const(snarl, node_idx, 2, 0.0),
+            control: in_pin_expr_or_const(snarl, node_id, 2, 0.0),
         }
     }
 }
@@ -107,9 +107,9 @@ pub struct ClampNode {
 }
 
 impl ClampNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> ClampExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> ClampExpr {
         ClampExpr {
-            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
+            source: in_pin_expr_or_const(snarl, node_id, 0, 0.0),
             lower_bound: self.lower_bound.var(snarl),
             upper_bound: self.upper_bound.var(snarl),
         }
@@ -124,12 +124,12 @@ pub struct CombinerNode {
 impl CombinerNode {
     fn expr(
         &self,
-        node_idx: NodeId,
+        node_id: NodeId,
         snarl: &Snarl<NoiseNode>,
         default_value: f64,
     ) -> [Box<Expr>; 2] {
         (0..2)
-            .map(|input| in_pin_expr_or_const(snarl, node_idx, input, default_value))
+            .map(|input| in_pin_expr_or_const(snarl, node_id, input, default_value))
             .collect::<Vec<_>>()
             .try_into()
             .unwrap()
@@ -198,21 +198,21 @@ pub struct ControlPointNode {
 pub struct CurveNode {
     pub image: Image,
 
-    pub control_point_node_indices: Vec<Option<NodeId>>,
+    pub control_point_node_ids: Vec<Option<NodeId>>,
 }
 
 impl CurveNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> CurveExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> CurveExpr {
         CurveExpr {
-            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
+            source: in_pin_expr_or_const(snarl, node_id, 0, 0.0),
             control_points: self
-                .control_point_node_indices
+                .control_point_node_ids
                 .iter()
                 .copied()
-                .filter_map(|node_idx| {
-                    node_idx.map(|node_idx| {
+                .filter_map(|node_id| {
+                    node_id.map(|node_id| {
                         snarl
-                            .get_node(node_idx)
+                            .get_node(node_id)
                             .and_then(NoiseNode::as_control_point)
                             .map(|control_point| ControlPointExpr {
                                 input_value: control_point.input.var(snarl),
@@ -248,11 +248,11 @@ pub struct DisplaceNode {
 }
 
 impl DisplaceNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> DisplaceExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> DisplaceExpr {
         DisplaceExpr {
-            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
+            source: in_pin_expr_or_const(snarl, node_id, 0, 0.0),
             axes: (1..5)
-                .map(|input| in_pin_expr_or_const(snarl, node_idx, input, 0.0))
+                .map(|input| in_pin_expr_or_const(snarl, node_id, input, 0.0))
                 .collect::<Vec<_>>()
                 .try_into()
                 .unwrap(),
@@ -268,9 +268,9 @@ pub struct ExponentNode {
 }
 
 impl ExponentNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> ExponentExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> ExponentExpr {
         ExponentExpr {
-            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
+            source: in_pin_expr_or_const(snarl, node_id, 0, 0.0),
             exponent: self.exponent.var(snarl),
         }
     }
@@ -364,9 +364,9 @@ pub enum NodeValue<T> {
 }
 
 impl<T> NodeValue<T> {
-    pub fn as_node_index(&self) -> Option<NodeId> {
-        if let &Self::Node(node_idx) = self {
-            Some(node_idx)
+    pub fn as_node_id(&self) -> Option<NodeId> {
+        if let &Self::Node(node_id) = self {
+            Some(node_id)
         } else {
             None
         }
@@ -380,22 +380,22 @@ impl<T> NodeValue<T> {
         }
     }
 
-    pub fn is_node_idx(&self) -> bool {
-        self.as_node_index().is_some()
+    pub fn is_node_id(&self) -> bool {
+        self.as_node_id().is_some()
     }
 }
 
 impl NodeValue<f64> {
     fn eval(self, snarl: &Snarl<NoiseNode>) -> f64 {
         match self {
-            Self::Node(node_idx) => snarl.get_node(node_idx).unwrap().eval_f64(snarl),
+            Self::Node(node_id) => snarl.get_node(node_id).unwrap().eval_f64(snarl),
             Self::Value(value) => value,
         }
     }
 
     fn var(self, snarl: &Snarl<NoiseNode>) -> Variable<f64> {
         match self {
-            Self::Node(node_idx) => match snarl.get_node(node_idx).unwrap() {
+            Self::Node(node_id) => match snarl.get_node(node_id).unwrap() {
                 NoiseNode::F64(node) => Variable::Named(node.name.clone(), node.value),
                 NoiseNode::F64Operation(node) => node.var(snarl),
                 _ => unreachable!(),
@@ -408,14 +408,14 @@ impl NodeValue<f64> {
 impl NodeValue<u32> {
     fn eval(self, snarl: &Snarl<NoiseNode>) -> u32 {
         match self {
-            Self::Node(node_idx) => snarl.get_node(node_idx).unwrap().eval_u32(snarl),
+            Self::Node(node_id) => snarl.get_node(node_id).unwrap().eval_u32(snarl),
             Self::Value(value) => value,
         }
     }
 
     fn var(self, snarl: &Snarl<NoiseNode>) -> Variable<u32> {
         match self {
-            Self::Node(node_idx) => match snarl.get_node(node_idx).unwrap() {
+            Self::Node(node_id) => match snarl.get_node(node_id).unwrap() {
                 NoiseNode::U32(node) => Variable::Named(node.name.clone(), node.value),
                 NoiseNode::U32Operation(node) => Variable::Operation(
                     node.inputs
@@ -712,41 +712,41 @@ impl NoiseNode {
         }
     }
 
-    pub fn expr(&self, node_idx: NodeId, snarl: &Snarl<Self>) -> Expr {
+    pub fn expr(&self, node_id: NodeId, snarl: &Snarl<Self>) -> Expr {
         match self {
-            Self::Abs(node) => Expr::Abs(node.expr(node_idx, snarl)),
-            Self::Add(node) => Expr::Add(node.expr(node_idx, snarl, 0.0)),
+            Self::Abs(node) => Expr::Abs(node.expr(node_id, snarl)),
+            Self::Add(node) => Expr::Add(node.expr(node_id, snarl, 0.0)),
             Self::BasicMulti(node) => Expr::BasicMulti(node.expr(snarl)),
             Self::Billow(node) => Expr::Billow(node.expr(snarl)),
-            Self::Blend(node) => Expr::Blend(node.expr(node_idx, snarl)),
+            Self::Blend(node) => Expr::Blend(node.expr(node_id, snarl)),
             Self::Checkerboard(node) => Expr::Checkerboard(node.size.var(snarl)),
-            Self::Clamp(node) => Expr::Clamp(node.expr(node_idx, snarl)),
-            Self::Curve(node) => Expr::Curve(node.expr(node_idx, snarl)),
+            Self::Clamp(node) => Expr::Clamp(node.expr(node_id, snarl)),
+            Self::Curve(node) => Expr::Curve(node.expr(node_id, snarl)),
             Self::Cylinders(node) => Expr::Cylinders(node.frequency.var(snarl)),
-            Self::Displace(node) => Expr::Displace(node.expr(node_idx, snarl)),
-            Self::Exponent(node) => Expr::Exponent(node.expr(node_idx, snarl)),
+            Self::Displace(node) => Expr::Displace(node.expr(node_id, snarl)),
+            Self::Exponent(node) => Expr::Exponent(node.expr(node_id, snarl)),
             Self::F64(node) => Expr::Constant(Variable::Named(node.name.clone(), node.value)),
             Self::F64Operation(node) => Expr::Constant(node.var(snarl)),
             Self::Fbm(node) => Expr::Fbm(node.expr(snarl)),
             Self::HybridMulti(node) => Expr::HybridMulti(node.expr(snarl)),
-            Self::Max(node) => Expr::Max(node.expr(node_idx, snarl, 1.0)),
-            Self::Min(node) => Expr::Min(node.expr(node_idx, snarl, -1.0)),
-            Self::Multiply(node) => Expr::Multiply(node.expr(node_idx, snarl, 1.0)),
-            Self::Negate(node) => Expr::Negate(node.expr(node_idx, snarl)),
+            Self::Max(node) => Expr::Max(node.expr(node_id, snarl, 1.0)),
+            Self::Min(node) => Expr::Min(node.expr(node_id, snarl, -1.0)),
+            Self::Multiply(node) => Expr::Multiply(node.expr(node_id, snarl, 1.0)),
+            Self::Negate(node) => Expr::Negate(node.expr(node_id, snarl)),
             Self::OpenSimplex(node) => Expr::OpenSimplex(node.seed.var(snarl)),
             Self::Perlin(node) => Expr::Perlin(node.seed.var(snarl)),
             Self::PerlinSurflet(node) => Expr::PerlinSurflet(node.seed.var(snarl)),
-            Self::Power(node) => Expr::Power(node.expr(node_idx, snarl, 1.0)),
+            Self::Power(node) => Expr::Power(node.expr(node_id, snarl, 1.0)),
             Self::RigidMulti(node) => Expr::RidgedMulti(node.expr(snarl)),
-            Self::RotatePoint(node) => Expr::RotatePoint(node.expr(node_idx, snarl)),
-            Self::ScaleBias(node) => Expr::ScaleBias(node.expr(node_idx, snarl)),
-            Self::ScalePoint(node) => Expr::ScalePoint(node.expr(node_idx, snarl)),
-            Self::Select(node) => Expr::Select(node.expr(node_idx, snarl)),
+            Self::RotatePoint(node) => Expr::RotatePoint(node.expr(node_id, snarl)),
+            Self::ScaleBias(node) => Expr::ScaleBias(node.expr(node_id, snarl)),
+            Self::ScalePoint(node) => Expr::ScalePoint(node.expr(node_id, snarl)),
+            Self::Select(node) => Expr::Select(node.expr(node_id, snarl)),
             Self::Simplex(node) => Expr::Simplex(node.seed.var(snarl)),
             Self::SuperSimplex(node) => Expr::SuperSimplex(node.seed.var(snarl)),
-            Self::Terrace(node) => Expr::Terrace(node.expr(node_idx, snarl)),
-            Self::TranslatePoint(node) => Expr::TranslatePoint(node.expr(node_idx, snarl)),
-            Self::Turbulence(node) => Expr::Turbulence(node.expr(node_idx, snarl)),
+            Self::Terrace(node) => Expr::Terrace(node.expr(node_id, snarl)),
+            Self::TranslatePoint(node) => Expr::TranslatePoint(node.expr(node_id, snarl)),
+            Self::Turbulence(node) => Expr::Turbulence(node.expr(node_id, snarl)),
             Self::Value(node) => Expr::Value(node.seed.var(snarl)),
             Self::Worley(node) => Expr::Worley(node.expr(snarl)),
             Self::ControlPoint(_) | Self::Operation(_) | Self::U32(_) | Self::U32Operation(_) => {
@@ -847,22 +847,22 @@ impl NoiseNode {
         }
     }
 
-    pub fn propagate_f64_from_tuple_op(node_idx: NodeId, snarl: &mut Snarl<Self>) {
+    pub fn propagate_f64_from_tuple_op(node_id: NodeId, snarl: &mut Snarl<Self>) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
-            static NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_IDS: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static NODE_IDS: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
-        let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
-        let mut node_indices = NODE_INDICES.take().unwrap();
-        node_indices.push(node_idx);
+        let mut child_node_ids = CHILD_NODE_IDS.take().unwrap();
+        let mut node_ids = NODE_IDS.take().unwrap();
+        node_ids.push(node_id);
 
-        while let Some(node_idx) = node_indices.pop() {
-            if child_node_indices.insert(node_idx) {
-                node_indices.extend(
+        while let Some(node_id) = node_ids.pop() {
+            if child_node_ids.insert(node_id) {
+                node_ids.extend(
                     snarl
                         .out_pin(OutPinId {
-                            node: node_idx,
+                            node: node_id,
                             output: 0,
                         })
                         .remotes
@@ -870,9 +870,9 @@ impl NoiseNode {
                         .map(|remote| remote.node),
                 );
 
-                if let node @ Self::Operation(_) = snarl.get_node_mut(node_idx).unwrap() {
+                if let node @ Self::Operation(_) = snarl.get_node_mut(node_id).unwrap() {
                     let op = node.as_const_op_tuple().unwrap().clone();
-                    node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
+                    node_ids.extend(op.inputs.iter().filter_map(|input| input.as_node_id()));
 
                     *node = NoiseNode::F64Operation(ConstantOpNode {
                         inputs: op
@@ -880,10 +880,7 @@ impl NoiseNode {
                             .iter()
                             .copied()
                             .map(|input| {
-                                input
-                                    .as_node_index()
-                                    .map(NodeValue::Node)
-                                    .unwrap_or_default()
+                                input.as_node_id().map(NodeValue::Node).unwrap_or_default()
                             })
                             .collect::<Vec<_>>()
                             .try_into()
@@ -896,30 +893,30 @@ impl NoiseNode {
             }
         }
 
-        child_node_indices.clear();
-        CHILD_NODE_INDICES.set(Some(child_node_indices));
-        NODE_INDICES.set(Some(node_indices));
+        child_node_ids.clear();
+        CHILD_NODE_IDS.set(Some(child_node_ids));
+        NODE_IDS.set(Some(node_ids));
     }
 
-    pub fn propagate_tuple_from_f64_op(node_idx: NodeId, snarl: &mut Snarl<Self>) {
+    pub fn propagate_tuple_from_f64_op(node_id: NodeId, snarl: &mut Snarl<Self>) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
-            static NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_IDS: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static NODE_IDS: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
-        let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
-        let mut node_indices = NODE_INDICES.take().unwrap();
-        node_indices.push(node_idx);
+        let mut child_node_ids = CHILD_NODE_IDS.take().unwrap();
+        let mut node_ids = NODE_IDS.take().unwrap();
+        node_ids.push(node_id);
 
-        while let Some(node_idx) = node_indices.pop() {
-            if child_node_indices.insert(node_idx) {
-                if let node @ Self::F64Operation(_) = snarl.get_node(node_idx).unwrap() {
+        while let Some(node_id) = node_ids.pop() {
+            if child_node_ids.insert(node_id) {
+                if let node @ Self::F64Operation(_) = snarl.get_node(node_id).unwrap() {
                     let op = node.as_const_op_f64().unwrap();
-                    node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
-                    node_indices.extend(
+                    node_ids.extend(op.inputs.iter().filter_map(|input| input.as_node_id()));
+                    node_ids.extend(
                         snarl
                             .out_pin(OutPinId {
-                                node: node_idx,
+                                node: node_id,
                                 output: 0,
                             })
                             .remotes
@@ -927,19 +924,19 @@ impl NoiseNode {
                             .map(|remote| remote.node),
                     );
                 } else {
-                    child_node_indices.clear();
-                    CHILD_NODE_INDICES.set(Some(child_node_indices));
+                    child_node_ids.clear();
+                    CHILD_NODE_IDS.set(Some(child_node_ids));
 
-                    node_indices.clear();
-                    NODE_INDICES.set(Some(node_indices));
+                    node_ids.clear();
+                    NODE_IDS.set(Some(node_ids));
 
                     return;
                 }
             }
         }
 
-        for node_idx in child_node_indices.drain() {
-            let node = snarl.get_node_mut(node_idx).unwrap();
+        for node_id in child_node_ids.drain() {
+            let node = snarl.get_node_mut(node_id).unwrap();
             let op = node.as_const_op_f64().unwrap().clone();
 
             *node = NoiseNode::Operation(ConstantOpNode {
@@ -947,12 +944,7 @@ impl NoiseNode {
                     .inputs
                     .iter()
                     .copied()
-                    .map(|input| {
-                        input
-                            .as_node_index()
-                            .map(NodeValue::Node)
-                            .unwrap_or_default()
-                    })
+                    .map(|input| input.as_node_id().map(NodeValue::Node).unwrap_or_default())
                     .collect::<Vec<_>>()
                     .try_into()
                     .unwrap(),
@@ -960,29 +952,29 @@ impl NoiseNode {
             });
         }
 
-        CHILD_NODE_INDICES.set(Some(child_node_indices));
-        NODE_INDICES.set(Some(node_indices));
+        CHILD_NODE_IDS.set(Some(child_node_ids));
+        NODE_IDS.set(Some(node_ids));
     }
 
-    pub fn propagate_tuple_from_u32_op(node_idx: NodeId, snarl: &mut Snarl<Self>) {
+    pub fn propagate_tuple_from_u32_op(node_id: NodeId, snarl: &mut Snarl<Self>) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
-            static NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_IDS: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static NODE_IDS: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
-        let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
-        let mut node_indices = NODE_INDICES.take().unwrap();
-        node_indices.push(node_idx);
+        let mut child_node_ids = CHILD_NODE_IDS.take().unwrap();
+        let mut node_ids = NODE_IDS.take().unwrap();
+        node_ids.push(node_id);
 
-        while let Some(node_idx) = node_indices.pop() {
-            if child_node_indices.insert(node_idx) {
-                if let node @ Self::U32Operation(_) = snarl.get_node(node_idx).unwrap() {
+        while let Some(node_id) = node_ids.pop() {
+            if child_node_ids.insert(node_id) {
+                if let node @ Self::U32Operation(_) = snarl.get_node(node_id).unwrap() {
                     let op = node.as_const_op_u32().unwrap();
-                    node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
-                    node_indices.extend(
+                    node_ids.extend(op.inputs.iter().filter_map(|input| input.as_node_id()));
+                    node_ids.extend(
                         snarl
                             .out_pin(OutPinId {
-                                node: node_idx,
+                                node: node_id,
                                 output: 0,
                             })
                             .remotes
@@ -990,19 +982,19 @@ impl NoiseNode {
                             .map(|remote| remote.node),
                     );
                 } else {
-                    child_node_indices.clear();
-                    CHILD_NODE_INDICES.set(Some(child_node_indices));
+                    child_node_ids.clear();
+                    CHILD_NODE_IDS.set(Some(child_node_ids));
 
-                    node_indices.clear();
-                    NODE_INDICES.set(Some(node_indices));
+                    node_ids.clear();
+                    NODE_IDS.set(Some(node_ids));
 
                     return;
                 }
             }
         }
 
-        for node_idx in child_node_indices.drain() {
-            let node = snarl.get_node_mut(node_idx).unwrap();
+        for node_id in child_node_ids.drain() {
+            let node = snarl.get_node_mut(node_id).unwrap();
             let op = node.as_const_op_u32().unwrap().clone();
 
             *node = NoiseNode::Operation(ConstantOpNode {
@@ -1010,12 +1002,7 @@ impl NoiseNode {
                     .inputs
                     .iter()
                     .copied()
-                    .map(|input| {
-                        input
-                            .as_node_index()
-                            .map(NodeValue::Node)
-                            .unwrap_or_default()
-                    })
+                    .map(|input| input.as_node_id().map(NodeValue::Node).unwrap_or_default())
                     .collect::<Vec<_>>()
                     .try_into()
                     .unwrap(),
@@ -1023,26 +1010,26 @@ impl NoiseNode {
             });
         }
 
-        CHILD_NODE_INDICES.set(Some(child_node_indices));
-        NODE_INDICES.set(Some(node_indices));
+        CHILD_NODE_IDS.set(Some(child_node_ids));
+        NODE_IDS.set(Some(node_ids));
     }
 
-    pub fn propagate_u32_from_tuple_op(node_idx: NodeId, snarl: &mut Snarl<Self>) {
+    pub fn propagate_u32_from_tuple_op(node_id: NodeId, snarl: &mut Snarl<Self>) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
-            static NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_IDS: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static NODE_IDS: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
-        let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
-        let mut node_indices = NODE_INDICES.take().unwrap();
-        node_indices.push(node_idx);
+        let mut child_node_ids = CHILD_NODE_IDS.take().unwrap();
+        let mut node_ids = NODE_IDS.take().unwrap();
+        node_ids.push(node_id);
 
-        while let Some(node_idx) = node_indices.pop() {
-            if child_node_indices.insert(node_idx) {
-                node_indices.extend(
+        while let Some(node_id) = node_ids.pop() {
+            if child_node_ids.insert(node_id) {
+                node_ids.extend(
                     snarl
                         .out_pin(OutPinId {
-                            node: node_idx,
+                            node: node_id,
                             output: 0,
                         })
                         .remotes
@@ -1050,9 +1037,9 @@ impl NoiseNode {
                         .map(|remote| remote.node),
                 );
 
-                if let node @ Self::Operation(_) = snarl.get_node_mut(node_idx).unwrap() {
+                if let node @ Self::Operation(_) = snarl.get_node_mut(node_id).unwrap() {
                     let op = node.as_const_op_tuple().unwrap().clone();
-                    node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
+                    node_ids.extend(op.inputs.iter().filter_map(|input| input.as_node_id()));
 
                     *node = NoiseNode::U32Operation(ConstantOpNode {
                         inputs: op
@@ -1060,10 +1047,7 @@ impl NoiseNode {
                             .iter()
                             .copied()
                             .map(|input| {
-                                input
-                                    .as_node_index()
-                                    .map(NodeValue::Node)
-                                    .unwrap_or_default()
+                                input.as_node_id().map(NodeValue::Node).unwrap_or_default()
                             })
                             .collect::<Vec<_>>()
                             .try_into()
@@ -1076,9 +1060,9 @@ impl NoiseNode {
             }
         }
 
-        child_node_indices.clear();
-        CHILD_NODE_INDICES.set(Some(child_node_indices));
-        NODE_INDICES.set(Some(node_indices));
+        child_node_ids.clear();
+        CHILD_NODE_IDS.set(Some(child_node_ids));
+        NODE_IDS.set(Some(node_ids));
     }
 }
 
@@ -1133,9 +1117,9 @@ pub struct ScaleBiasNode {
 }
 
 impl ScaleBiasNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> ScaleBiasExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> ScaleBiasExpr {
         ScaleBiasExpr {
-            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
+            source: in_pin_expr_or_const(snarl, node_id, 0, 0.0),
             scale: self.scale.var(snarl),
             bias: self.bias.var(snarl),
         }
@@ -1152,14 +1136,14 @@ pub struct SelectNode {
 }
 
 impl SelectNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> SelectExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> SelectExpr {
         SelectExpr {
             sources: (0..2)
-                .map(|input| in_pin_expr_or_const(snarl, node_idx, input, 0.0))
+                .map(|input| in_pin_expr_or_const(snarl, node_id, input, 0.0))
                 .collect::<Vec<_>>()
                 .try_into()
                 .unwrap(),
-            control: in_pin_expr_or_const(snarl, node_idx, 2, 0.0),
+            control: in_pin_expr_or_const(snarl, node_id, 2, 0.0),
             lower_bound: self.lower_bound.var(snarl),
             upper_bound: self.upper_bound.var(snarl),
             falloff: self.falloff.var(snarl),
@@ -1189,20 +1173,20 @@ pub struct TerraceNode {
     pub image: Image,
 
     pub inverted: bool,
-    pub control_point_node_indices: Vec<Option<NodeId>>,
+    pub control_point_node_ids: Vec<Option<NodeId>>,
 }
 
 impl TerraceNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> TerraceExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> TerraceExpr {
         TerraceExpr {
-            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
+            source: in_pin_expr_or_const(snarl, node_id, 0, 0.0),
             inverted: self.inverted,
             control_points: self
-                .control_point_node_indices
+                .control_point_node_ids
                 .iter()
                 .copied()
-                .filter_map(|node_idx| {
-                    node_idx.map(|node_idx| match snarl.get_node(node_idx).unwrap() {
+                .filter_map(|node_id| {
+                    node_id.map(|node_id| match snarl.get_node(node_id).unwrap() {
                         NoiseNode::F64(node) => Variable::Named(node.name.clone(), node.value),
                         NoiseNode::F64Operation(node) => node.var(snarl),
                         _ => unreachable!(),
@@ -1228,9 +1212,9 @@ impl TransformNode {
         }
     }
 
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> TransformExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> TransformExpr {
         TransformExpr {
-            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
+            source: in_pin_expr_or_const(snarl, node_id, 0, 0.0),
             axes: self
                 .axes
                 .iter()
@@ -1262,9 +1246,9 @@ pub struct TurbulenceNode {
 }
 
 impl TurbulenceNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> TurbulenceExpr {
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> TurbulenceExpr {
         TurbulenceExpr {
-            source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
+            source: in_pin_expr_or_const(snarl, node_id, 0, 0.0),
             source_ty: self.source_ty,
             seed: self.seed.var(snarl),
             frequency: self.frequency.var(snarl),
@@ -1295,8 +1279,8 @@ pub struct UnaryNode {
 }
 
 impl UnaryNode {
-    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> Box<Expr> {
-        in_pin_expr_or_const(snarl, node_idx, 0, 0.0)
+    fn expr(&self, node_id: NodeId, snarl: &Snarl<NoiseNode>) -> Box<Expr> {
+        in_pin_expr_or_const(snarl, node_id, 0, 0.0)
     }
 }
 

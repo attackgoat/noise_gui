@@ -98,7 +98,7 @@ impl Threads {
 
     fn process_request(
         node_exprs: &Arc<RwLock<NodeExprsCache>>,
-        node_idx: NodeId,
+        node_id: NodeId,
         version: usize,
         image_info: ImageInfo,
         tx: &Sender<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
@@ -110,7 +110,7 @@ impl Threads {
         if let Some(expr) = node_exprs
             .read()
             .unwrap()
-            .get(&node_idx)
+            .get(&node_id)
             .filter(|(current_version, _)| *current_version == version)
             .map(|(_, expr)| Arc::clone(expr))
         {
@@ -128,7 +128,7 @@ impl Threads {
                 }
             }
 
-            tx.send((node_idx, version, coord, image)).unwrap();
+            tx.send((node_id, version, coord, image)).unwrap();
 
             true
         } else {
@@ -147,8 +147,8 @@ impl Threads {
         tx: Sender<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
     ) {
         // Receive the next versioned node request from the main thread
-        while let Some((node_idx, version, image_info)) = rx.recv().unwrap() {
-            Self::process_request(&node_exprs, node_idx, version, image_info, &tx);
+        while let Some((node_id, version, image_info)) = rx.recv().unwrap() {
+            Self::process_request(&node_exprs, node_id, version, image_info, &tx);
         }
     }
 
@@ -175,8 +175,8 @@ impl Threads {
         let mut processed = 0;
 
         // Receive the next versioned node request
-        while let Some((node_idx, version, image_info)) = rx.try_recv().ok().flatten() {
-            if Self::process_request(&node_exprs, node_idx, version, image_info, &tx) {
+        while let Some((node_id, version, image_info)) = rx.try_recv().ok().flatten() {
+            if Self::process_request(&node_exprs, node_id, version, image_info, &tx) {
                 processed += 1;
 
                 if processed == Self::REQUESTS_PER_FRAME {

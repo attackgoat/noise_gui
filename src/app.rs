@@ -46,8 +46,8 @@ pub struct App {
 
     snarl: Snarl<NoiseNode>,
     threads: Threads,
-    removed_node_indices: HashSet<NodeId>,
-    updated_node_indices: HashSet<NodeId>,
+    removed_node_ids: HashSet<NodeId>,
+    updated_node_ids: HashSet<NodeId>,
     version: usize,
 }
 
@@ -70,8 +70,8 @@ impl App {
 
         let node_exprs = Default::default();
         let threads = Threads::new(&node_exprs);
-        let removed_node_indices = Default::default();
-        let updated_node_indices = Self::all_image_node_indices(&snarl).collect();
+        let removed_node_ids = Default::default();
+        let updated_node_ids = Self::all_image_node_ids(&snarl).collect();
 
         Self {
             node_exprs,
@@ -81,16 +81,16 @@ impl App {
 
             snarl,
             threads,
-            removed_node_indices,
-            updated_node_indices,
+            removed_node_ids,
+            updated_node_ids,
             version: 0,
         }
     }
 
-    fn all_image_node_indices(snarl: &Snarl<NoiseNode>) -> impl Iterator<Item = NodeId> + '_ {
+    fn all_image_node_ids(snarl: &Snarl<NoiseNode>) -> impl Iterator<Item = NodeId> + '_ {
         snarl
             .node_ids()
-            .filter_map(|(node_idx, node)| node.has_image().then_some(node_idx))
+            .filter_map(|(node_id, node)| node.has_image().then_some(node_id))
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -99,7 +99,7 @@ impl App {
     }
 
     fn has_changes(&self) -> bool {
-        !self.removed_node_indices.is_empty() || !self.updated_node_indices.is_empty()
+        !self.removed_node_ids.is_empty() || !self.updated_node_ids.is_empty()
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -119,11 +119,11 @@ impl App {
     fn remove_nodes(&mut self) {
         let mut node_exprs = self.node_exprs.write().unwrap();
 
-        for node_idx in self.removed_node_indices.drain() {
-            node_exprs.remove(&node_idx);
+        for node_id in self.removed_node_ids.drain() {
+            node_exprs.remove(&node_id);
 
             // Just in case (never happens!)
-            self.updated_node_indices.remove(&node_idx);
+            self.updated_node_ids.remove(&node_id);
         }
     }
 
@@ -157,19 +157,19 @@ impl App {
 
     fn update_images(&mut self) {
         thread_local! {
-            static NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static NODE_IDS: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
         // HACK: snarl::get_node_mut doesn't return an option and will panic on missing node indices
-        let mut node_indices = NODE_INDICES.take().unwrap();
-        for (node_idx, _) in self.snarl.node_ids() {
-            node_indices.insert(node_idx);
+        let mut node_ids = NODE_IDS.take().unwrap();
+        for (node_id, _) in self.snarl.node_ids() {
+            node_ids.insert(node_id);
         }
 
-        for (node_idx, image_version, coord, image) in self.threads.try_recv_iter() {
+        for (node_id, image_version, coord, image) in self.threads.try_recv_iter() {
             // We have to check to make sure snarl *still* contains this index because it may have
             // been removed by the time the thread has responded to the image request
-            if !node_indices.contains(&node_idx) {
+            if !node_ids.contains(&node_id) {
                 continue;
             }
 
@@ -179,7 +179,7 @@ impl App {
                 ..
             }) = self
                 .snarl
-                .get_node_mut(node_idx)
+                .get_node_mut(node_id)
                 .and_then(NoiseNode::image_mut)
             {
                 // We have to check to make sure the current image version is the same one the
@@ -196,57 +196,57 @@ impl App {
             }
         }
 
-        node_indices.clear();
-        NODE_INDICES.set(Some(node_indices));
+        node_ids.clear();
+        NODE_IDS.set(Some(node_ids));
     }
 
     fn update_nodes(&mut self, ctx: &Context) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
-            static TEMP_NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_IDS: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static TEMP_NODE_IDS: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
-        let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
-        let mut temp_node_indices = TEMP_NODE_INDICES.take().unwrap();
+        let mut child_node_ids = CHILD_NODE_IDS.take().unwrap();
+        let mut temp_node_ids = TEMP_NODE_IDS.take().unwrap();
 
         // Before we process the user-updated nodes, we must propagate updates to child nodes
-        for node_idx in self.updated_node_indices.iter().copied() {
-            temp_node_indices.push(node_idx);
-            while let Some(node_idx) = temp_node_indices.pop() {
-                for node_idx in self
+        for node_id in self.updated_node_ids.iter().copied() {
+            temp_node_ids.push(node_id);
+            while let Some(node_id) = temp_node_ids.pop() {
+                for node_id in self
                     .snarl
                     .out_pin(OutPinId {
-                        node: node_idx,
+                        node: node_id,
                         output: 0,
                     })
                     .remotes
                     .iter()
                     .map(|remote| remote.node)
                 {
-                    child_node_indices.insert(node_idx);
-                    temp_node_indices.push(node_idx);
+                    child_node_ids.insert(node_id);
+                    temp_node_ids.push(node_id);
                 }
             }
         }
 
-        self.updated_node_indices.extend(child_node_indices.drain());
-        CHILD_NODE_INDICES.set(Some(child_node_indices));
-        TEMP_NODE_INDICES.set(Some(temp_node_indices));
+        self.updated_node_ids.extend(child_node_ids.drain());
+        CHILD_NODE_IDS.set(Some(child_node_ids));
+        TEMP_NODE_IDS.set(Some(temp_node_ids));
 
         // First we update the version of all updated images
         self.version = self.version.wrapping_add(1);
-        for node_idx in self.updated_node_indices.iter().copied() {
+        for node_id in self.updated_node_ids.iter().copied() {
             if let Some(image) = self
                 .snarl
-                .get_node_mut(node_idx)
+                .get_node_mut(node_id)
                 .and_then(NoiseNode::image_mut)
             {
                 // Ensure all image nodes contain a valid texture
                 if image.texture.is_none() {
-                    debug!("Creating image for #{node_idx:?}");
+                    debug!("Creating image for #{node_id:?}");
 
                     image.texture = Some(ctx.load_texture(
-                        format!("image{node_idx:?}"),
+                        format!("image{node_id:?}"),
                         ColorImage::new(Self::IMAGE_SIZE, Color32::TRANSPARENT),
                         Default::default(),
                     ));
@@ -265,21 +265,21 @@ impl App {
         let mut requests = REQUESTS.take().unwrap();
 
         // Next we update the expressions of all updated images and request new images
-        for node_idx in self.updated_node_indices.drain() {
-            let node = self.snarl.get_node(node_idx).unwrap();
+        for node_id in self.updated_node_ids.drain() {
+            let node = self.snarl.get_node(node_id).unwrap();
             if let Some(image) = node.image() {
-                debug!("Updating image for #{node_idx:?}");
+                debug!("Updating image for #{node_id:?}");
 
                 self.node_exprs.write().unwrap().insert(
-                    node_idx,
-                    (image.version, Arc::new(node.expr(node_idx, &self.snarl))),
+                    node_id,
+                    (image.version, Arc::new(node.expr(node_id, &self.snarl))),
                 );
 
                 // We request coordinate chunks from the threads using pre-shuffled data so that
                 // all the responses come back in a static-like pattern and not row by row
                 for coord in shuffled_u8(image.version).iter().copied() {
                     requests.push((
-                        node_idx,
+                        node_id,
                         image.version,
                         ImageInfo {
                             coord,
@@ -297,9 +297,9 @@ impl App {
         let image_count = requests.len() / Self::IMAGE_COUNT;
         for request_idx in 0..Self::IMAGE_COUNT {
             for image_idx in 0..image_count {
-                let (node_idx, image_version, image_info) =
+                let (node_id, image_version, image_info) =
                     requests[image_idx * Self::IMAGE_COUNT + request_idx];
-                self.threads.send(node_idx, image_version, image_info);
+                self.threads.send(node_id, image_version, image_info);
             }
         }
 
@@ -336,8 +336,7 @@ impl eframe::App for App {
                         if let Some(path) = Self::file_dialog().pick_file() {
                             self.snarl = Self::open(&path).unwrap_or_default();
                             self.path = Some(path);
-                            self.updated_node_indices =
-                                Self::all_image_node_indices(&self.snarl).collect();
+                            self.updated_node_ids = Self::all_image_node_ids(&self.snarl).collect();
                         }
 
                         ui.close_menu();
@@ -380,8 +379,8 @@ impl eframe::App for App {
         CentralPanel::default().show(ctx, |ui| {
             self.snarl.show(
                 &mut Viewer {
-                    removed_node_indices: &mut self.removed_node_indices,
-                    updated_node_indices: &mut self.updated_node_indices,
+                    removed_node_ids: &mut self.removed_node_ids,
+                    updated_node_ids: &mut self.updated_node_ids,
                 },
                 &SnarlStyle {
                     collapsible: true,
