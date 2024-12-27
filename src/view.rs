@@ -14,7 +14,7 @@ use {
         TextEdit, TextWrapMode, Ui, Vec2,
     },
     egui_snarl::{
-        ui::{CustomPinShape, PinInfo, SnarlViewer},
+        ui::{ PinInfo, SnarlViewer},
         InPin, NodeId, OutPin, OutPinId, Snarl,
     },
     log::debug,
@@ -135,46 +135,7 @@ impl<'a> Viewer<'a> {
         PinInfo::default()
             .with_fill(Color32::from_gray(192))
             .with_stroke(Stroke::new(1.5, Color32::from_white_alpha(192)))
-            .with_shape(egui_snarl::ui::PinShape::Custom(CustomPinShape::new(
-                move |painter, rect, _fill, stroke| {
-                    const S: f32 = 1.0;
-                    const A: Vec2 = vec2(0.2 * S, 0.7 * S);
-                    const B: Vec2 = vec2(0.2 * S, -0.7 * S);
-                    const C: Vec2 = vec2(0.9 * S, -0.7 * S);
-                    const D: Vec2 = vec2(1.5 * S, 0.0 * S);
-                    const E: Vec2 = vec2(0.9 * S, 0.7 * S);
-
-                    let mut pos = rect.min;
-                    let size = rect.size();
-                    pos.y += 0.5 * size.y;
-
-                    if is_input {
-                        pos.x -= 0.6 * size.x;
-                    }
-
-                    let points = vec![
-                        pos + A * size,
-                        pos + B * size,
-                        pos + C * size,
-                        pos + D * size,
-                        pos + E * size,
-                    ];
-
-                    // The fill set on the pin sets the wire color - I want a different fill here
-                    let fill = if filled {
-                        Color32::WHITE
-                    } else {
-                        Color32::from_gray(16)
-                    };
-
-                    painter.add(Shape::Path(PathShape {
-                        points,
-                        closed: true,
-                        fill,
-                        stroke: stroke.into(),
-                    }));
-                },
-            )))
+            .with_shape(egui_snarl::ui::PinShape::Star)
     }
 
     fn operation_pin_info(is_input: bool, filled: bool) -> PinInfo {
@@ -236,39 +197,7 @@ impl<'a> Viewer<'a> {
                 1.5,
                 Color32::from_rgba_unmultiplied(r, g, b, 192),
             ))
-            .with_shape(egui_snarl::ui::PinShape::Custom(CustomPinShape::new(
-                move |painter, rect, _fill, stroke| {
-                    const S: f32 = 1.0;
-                    const A: Vec2 = vec2(0.64 * S, 0.07 * S);
-                    const B: Vec2 = vec2(0.64 * S, -0.07 * S);
-                    const C: Vec2 = vec2(0.72 * S, 0.0 * S);
-
-                    let mut pos = rect.min;
-                    let size = rect.size();
-                    pos.y += 0.5 * size.y;
-
-                    if !is_input {
-                        pos.x += 0.6 * size.x;
-                    }
-
-                    let points = vec![pos + A * size, pos + B * size, pos + C * size];
-
-                    painter.add(Shape::Path(PathShape {
-                        points,
-                        closed: true,
-                        fill,
-                        stroke: stroke.into(),
-                    }));
-
-                    let radius = 0.5 * size.x;
-
-                    painter.add(if filled {
-                        Shape::circle_filled(pos, radius, fill)
-                    } else {
-                        Shape::circle_stroke(pos, radius, stroke)
-                    });
-                },
-            )))
+            .with_shape(egui_snarl::ui::PinShape::Triangle)
     }
 
     fn u32_pin_info(is_input: bool, filled: bool) -> PinInfo {

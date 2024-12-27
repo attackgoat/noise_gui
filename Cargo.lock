@@ -845,13 +845,12 @@ dependencies = [
 
 [[package]]
 name = "egui-snarl"
-version = "0.4.4"
-source = "git+https://github.com/zakarumych/egui-snarl?rev=1c9a80dd1e576d7a957dd633f417acab09d023c4#1c9a80dd1e576d7a957dd633f417acab09d023c4"
+version = "0.6.0"
+source = "git+https://github.com/zakarumych/egui-snarl?rev=b62633fc0d55e4cd9ed3071cd24357fdd54c3096#b62633fc0d55e4cd9ed3071cd24357fdd54c3096"
 dependencies = [
  "egui",
  "serde",
  "slab",
- "tiny-fn",
 ]
 
 [[package]]
@@ -2655,12 +2654,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "tiny-fn"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fde9a76dac5751480f711f327371c809d7f8a9f036436e6237d67859adbf3bd"
 
 [[package]]
 name = "tinyvec"
