@@ -1,6 +1,7 @@
 use {
     super::{app::NodeExprs, expr::Expr},
     crossbeam_channel::{unbounded, Receiver, Sender},
+    egui_snarl::NodeId,
     std::{
         collections::HashMap,
         sync::{Arc, RwLock},
@@ -14,7 +15,7 @@ use std::{
     thread::{available_parallelism, spawn, JoinHandle},
 };
 
-type NodeExprsCache = HashMap<usize, (usize, Arc<Expr>)>;
+type NodeExprsCache = HashMap<NodeId, (usize, Arc<Expr>)>;
 
 #[derive(Clone, Copy)]
 pub struct ImageInfo {
@@ -31,8 +32,8 @@ pub struct Threads {
     #[cfg(not(target_arch = "wasm32"))]
     workers: Vec<JoinHandle<()>>,
 
-    rx: Receiver<(usize, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
-    tx: Sender<Option<(usize, usize, ImageInfo)>>,
+    rx: Receiver<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
+    tx: Sender<Option<(NodeId, usize, ImageInfo)>>,
 }
 
 impl Threads {
@@ -97,10 +98,10 @@ impl Threads {
 
     fn process_request(
         node_exprs: &Arc<RwLock<NodeExprsCache>>,
-        node_idx: usize,
+        node_idx: NodeId,
         version: usize,
         image_info: ImageInfo,
-        tx: &Sender<(usize, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
+        tx: &Sender<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
     ) -> bool {
         let ImageInfo { coord, scale, x, y } = image_info;
 
@@ -135,15 +136,15 @@ impl Threads {
         }
     }
 
-    pub fn send(&self, node: usize, version: usize, image_info: ImageInfo) {
+    pub fn send(&self, node: NodeId, version: usize, image_info: ImageInfo) {
         self.tx.send(Some((node, version, image_info))).unwrap();
     }
 
     #[cfg(not(target_arch = "wasm32"))]
     fn thread_worker(
         node_exprs: NodeExprs,
-        rx: Receiver<Option<(usize, usize, ImageInfo)>>,
-        tx: Sender<(usize, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
+        rx: Receiver<Option<(NodeId, usize, ImageInfo)>>,
+        tx: Sender<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
     ) {
         // Receive the next versioned node request from the main thread
         while let Some((node_idx, version, image_info)) = rx.recv().unwrap() {
@@ -153,7 +154,7 @@ impl Threads {
 
     pub fn try_recv_iter(
         &self,
-    ) -> impl Iterator<Item = (usize, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])> + '_
+    ) -> impl Iterator<Item = (NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])> + '_
     {
         self.rx.try_iter()
     }
@@ -166,8 +167,8 @@ impl Threads {
     #[cfg(target_arch = "wasm32")]
     fn web_worker(
         node_exprs: &NodeExprs,
-        rx: &Receiver<Option<(usize, usize, ImageInfo)>>,
-        tx: &Sender<(usize, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
+        rx: &Receiver<Option<(NodeId, usize, ImageInfo)>>,
+        tx: &Sender<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
     ) {
         // On web we only process a small number of requests, always checking to only count
         // requests which are actually processed (and not stale ones)

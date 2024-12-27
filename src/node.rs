@@ -5,7 +5,7 @@ use {
         SelectExpr, SourceType, TerraceExpr, TransformExpr, TurbulenceExpr, Variable, WorleyExpr,
     },
     egui::TextureHandle,
-    egui_snarl::{InPinId, OutPinId, Snarl},
+    egui_snarl::{InPinId, NodeId, OutPinId, Snarl},
     noise::{
         BasicMulti as Fractal, Cylinders, Perlin as AnySeedable, RidgedMulti as RigidFractal,
         Turbulence, Worley,
@@ -18,15 +18,15 @@ fn constant(value: f64) -> Box<Expr> {
     Box::new(Expr::Constant(Variable::Anonymous(value)))
 }
 
-fn in_pin_expr(snarl: &Snarl<NoiseNode>, node_idx: usize, input: usize) -> Option<Box<Expr>> {
+fn in_pin_expr(snarl: &Snarl<NoiseNode>, node_idx: NodeId, input: usize) -> Option<Box<Expr>> {
     map_in_pin(snarl, node_idx, input, |node_idx| {
-        Box::new(snarl.get_node(node_idx).expr(node_idx, snarl))
+        Box::new(snarl.get_node(node_idx).unwrap().expr(node_idx, snarl))
     })
 }
 
 fn in_pin_expr_or_const(
     snarl: &Snarl<NoiseNode>,
-    node_idx: usize,
+    node_idx: NodeId,
     input: usize,
     value: f64,
 ) -> Box<Expr> {
@@ -35,7 +35,7 @@ fn in_pin_expr_or_const(
 
 fn in_pin_expr_or_else<F>(
     snarl: &Snarl<NoiseNode>,
-    node_idx: usize,
+    node_idx: NodeId,
     input: usize,
     f: F,
 ) -> Box<Expr>
@@ -45,9 +45,9 @@ where
     in_pin_expr(snarl, node_idx, input).unwrap_or_else(f)
 }
 
-fn map_in_pin<T, U, F>(snarl: &Snarl<T>, node_idx: usize, input: usize, f: F) -> Option<U>
+fn map_in_pin<T, U, F>(snarl: &Snarl<T>, node_idx: NodeId, input: usize, f: F) -> Option<U>
 where
-    F: FnOnce(usize) -> U,
+    F: FnOnce(NodeId) -> U,
 {
     let remotes = snarl
         .in_pin(InPinId {
@@ -70,7 +70,7 @@ pub struct BlendNode {
 }
 
 impl BlendNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> BlendExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> BlendExpr {
         BlendExpr {
             sources: (0..2)
                 .map(|input| in_pin_expr_or_const(snarl, node_idx, input, 0.0))
@@ -107,7 +107,7 @@ pub struct ClampNode {
 }
 
 impl ClampNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> ClampExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> ClampExpr {
         ClampExpr {
             source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             lower_bound: self.lower_bound.var(snarl),
@@ -124,7 +124,7 @@ pub struct CombinerNode {
 impl CombinerNode {
     fn expr(
         &self,
-        node_idx: usize,
+        node_idx: NodeId,
         snarl: &Snarl<NoiseNode>,
         default_value: f64,
     ) -> [Box<Expr>; 2] {
@@ -198,11 +198,11 @@ pub struct ControlPointNode {
 pub struct CurveNode {
     pub image: Image,
 
-    pub control_point_node_indices: Vec<Option<usize>>,
+    pub control_point_node_indices: Vec<Option<NodeId>>,
 }
 
 impl CurveNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> CurveExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> CurveExpr {
         CurveExpr {
             source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             control_points: self
@@ -213,7 +213,7 @@ impl CurveNode {
                     node_idx.map(|node_idx| {
                         snarl
                             .get_node(node_idx)
-                            .as_control_point()
+                            .and_then(NoiseNode::as_control_point)
                             .map(|control_point| ControlPointExpr {
                                 input_value: control_point.input.var(snarl),
                                 output_value: control_point.output.var(snarl),
@@ -248,7 +248,7 @@ pub struct DisplaceNode {
 }
 
 impl DisplaceNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> DisplaceExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> DisplaceExpr {
         DisplaceExpr {
             source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             axes: (1..5)
@@ -268,7 +268,7 @@ pub struct ExponentNode {
 }
 
 impl ExponentNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> ExponentExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> ExponentExpr {
         ExponentExpr {
             source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             exponent: self.exponent.var(snarl),
@@ -359,12 +359,12 @@ impl Default for Image {
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum NodeValue<T> {
-    Node(usize),
+    Node(NodeId),
     Value(T),
 }
 
 impl<T> NodeValue<T> {
-    pub fn as_node_index(&self) -> Option<usize> {
+    pub fn as_node_index(&self) -> Option<NodeId> {
         if let &Self::Node(node_idx) = self {
             Some(node_idx)
         } else {
@@ -388,14 +388,14 @@ impl<T> NodeValue<T> {
 impl NodeValue<f64> {
     fn eval(self, snarl: &Snarl<NoiseNode>) -> f64 {
         match self {
-            Self::Node(node_idx) => snarl.get_node(node_idx).eval_f64(snarl),
+            Self::Node(node_idx) => snarl.get_node(node_idx).unwrap().eval_f64(snarl),
             Self::Value(value) => value,
         }
     }
 
     fn var(self, snarl: &Snarl<NoiseNode>) -> Variable<f64> {
         match self {
-            Self::Node(node_idx) => match snarl.get_node(node_idx) {
+            Self::Node(node_idx) => match snarl.get_node(node_idx).unwrap() {
                 NoiseNode::F64(node) => Variable::Named(node.name.clone(), node.value),
                 NoiseNode::F64Operation(node) => node.var(snarl),
                 _ => unreachable!(),
@@ -408,14 +408,14 @@ impl NodeValue<f64> {
 impl NodeValue<u32> {
     fn eval(self, snarl: &Snarl<NoiseNode>) -> u32 {
         match self {
-            Self::Node(node_idx) => snarl.get_node(node_idx).eval_u32(snarl),
+            Self::Node(node_idx) => snarl.get_node(node_idx).unwrap().eval_u32(snarl),
             Self::Value(value) => value,
         }
     }
 
     fn var(self, snarl: &Snarl<NoiseNode>) -> Variable<u32> {
         match self {
-            Self::Node(node_idx) => match snarl.get_node(node_idx) {
+            Self::Node(node_idx) => match snarl.get_node(node_idx).unwrap() {
                 NoiseNode::U32(node) => Variable::Named(node.name.clone(), node.value),
                 NoiseNode::U32Operation(node) => Variable::Operation(
                     node.inputs
@@ -712,7 +712,7 @@ impl NoiseNode {
         }
     }
 
-    pub fn expr(&self, node_idx: usize, snarl: &Snarl<Self>) -> Expr {
+    pub fn expr(&self, node_idx: NodeId, snarl: &Snarl<Self>) -> Expr {
         match self {
             Self::Abs(node) => Expr::Abs(node.expr(node_idx, snarl)),
             Self::Add(node) => Expr::Add(node.expr(node_idx, snarl, 0.0)),
@@ -847,10 +847,10 @@ impl NoiseNode {
         }
     }
 
-    pub fn propagate_f64_from_tuple_op(node_idx: usize, snarl: &mut Snarl<Self>) {
+    pub fn propagate_f64_from_tuple_op(node_idx: NodeId, snarl: &mut Snarl<Self>) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<usize>>> = RefCell::new(Some(Default::default()));
-            static NODE_INDICES: RefCell<Option<Vec<usize>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
         let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
@@ -870,7 +870,7 @@ impl NoiseNode {
                         .map(|remote| remote.node),
                 );
 
-                if let node @ Self::Operation(_) = snarl.get_node_mut(node_idx) {
+                if let node @ Self::Operation(_) = snarl.get_node_mut(node_idx).unwrap() {
                     let op = node.as_const_op_tuple().unwrap().clone();
                     node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
 
@@ -901,10 +901,10 @@ impl NoiseNode {
         NODE_INDICES.set(Some(node_indices));
     }
 
-    pub fn propagate_tuple_from_f64_op(node_idx: usize, snarl: &mut Snarl<Self>) {
+    pub fn propagate_tuple_from_f64_op(node_idx: NodeId, snarl: &mut Snarl<Self>) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<usize>>> = RefCell::new(Some(Default::default()));
-            static NODE_INDICES: RefCell<Option<Vec<usize>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
         let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
@@ -913,7 +913,7 @@ impl NoiseNode {
 
         while let Some(node_idx) = node_indices.pop() {
             if child_node_indices.insert(node_idx) {
-                if let node @ Self::F64Operation(_) = snarl.get_node(node_idx) {
+                if let node @ Self::F64Operation(_) = snarl.get_node(node_idx).unwrap() {
                     let op = node.as_const_op_f64().unwrap();
                     node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
                     node_indices.extend(
@@ -939,7 +939,7 @@ impl NoiseNode {
         }
 
         for node_idx in child_node_indices.drain() {
-            let node = snarl.get_node_mut(node_idx);
+            let node = snarl.get_node_mut(node_idx).unwrap();
             let op = node.as_const_op_f64().unwrap().clone();
 
             *node = NoiseNode::Operation(ConstantOpNode {
@@ -964,10 +964,10 @@ impl NoiseNode {
         NODE_INDICES.set(Some(node_indices));
     }
 
-    pub fn propagate_tuple_from_u32_op(node_idx: usize, snarl: &mut Snarl<Self>) {
+    pub fn propagate_tuple_from_u32_op(node_idx: NodeId, snarl: &mut Snarl<Self>) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<usize>>> = RefCell::new(Some(Default::default()));
-            static NODE_INDICES: RefCell<Option<Vec<usize>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
         let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
@@ -976,7 +976,7 @@ impl NoiseNode {
 
         while let Some(node_idx) = node_indices.pop() {
             if child_node_indices.insert(node_idx) {
-                if let node @ Self::U32Operation(_) = snarl.get_node(node_idx) {
+                if let node @ Self::U32Operation(_) = snarl.get_node(node_idx).unwrap() {
                     let op = node.as_const_op_u32().unwrap();
                     node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
                     node_indices.extend(
@@ -1002,7 +1002,7 @@ impl NoiseNode {
         }
 
         for node_idx in child_node_indices.drain() {
-            let node = snarl.get_node_mut(node_idx);
+            let node = snarl.get_node_mut(node_idx).unwrap();
             let op = node.as_const_op_u32().unwrap().clone();
 
             *node = NoiseNode::Operation(ConstantOpNode {
@@ -1027,10 +1027,10 @@ impl NoiseNode {
         NODE_INDICES.set(Some(node_indices));
     }
 
-    pub fn propagate_u32_from_tuple_op(node_idx: usize, snarl: &mut Snarl<Self>) {
+    pub fn propagate_u32_from_tuple_op(node_idx: NodeId, snarl: &mut Snarl<Self>) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<usize>>> = RefCell::new(Some(Default::default()));
-            static NODE_INDICES: RefCell<Option<Vec<usize>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
         let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
@@ -1050,7 +1050,7 @@ impl NoiseNode {
                         .map(|remote| remote.node),
                 );
 
-                if let node @ Self::Operation(_) = snarl.get_node_mut(node_idx) {
+                if let node @ Self::Operation(_) = snarl.get_node_mut(node_idx).unwrap() {
                     let op = node.as_const_op_tuple().unwrap().clone();
                     node_indices.extend(op.inputs.iter().filter_map(|input| input.as_node_index()));
 
@@ -1133,7 +1133,7 @@ pub struct ScaleBiasNode {
 }
 
 impl ScaleBiasNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> ScaleBiasExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> ScaleBiasExpr {
         ScaleBiasExpr {
             source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             scale: self.scale.var(snarl),
@@ -1152,7 +1152,7 @@ pub struct SelectNode {
 }
 
 impl SelectNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> SelectExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> SelectExpr {
         SelectExpr {
             sources: (0..2)
                 .map(|input| in_pin_expr_or_const(snarl, node_idx, input, 0.0))
@@ -1189,11 +1189,11 @@ pub struct TerraceNode {
     pub image: Image,
 
     pub inverted: bool,
-    pub control_point_node_indices: Vec<Option<usize>>,
+    pub control_point_node_indices: Vec<Option<NodeId>>,
 }
 
 impl TerraceNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> TerraceExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> TerraceExpr {
         TerraceExpr {
             source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             inverted: self.inverted,
@@ -1202,7 +1202,7 @@ impl TerraceNode {
                 .iter()
                 .copied()
                 .filter_map(|node_idx| {
-                    node_idx.map(|node_idx| match snarl.get_node(node_idx) {
+                    node_idx.map(|node_idx| match snarl.get_node(node_idx).unwrap() {
                         NoiseNode::F64(node) => Variable::Named(node.name.clone(), node.value),
                         NoiseNode::F64Operation(node) => node.var(snarl),
                         _ => unreachable!(),
@@ -1228,7 +1228,7 @@ impl TransformNode {
         }
     }
 
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> TransformExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> TransformExpr {
         TransformExpr {
             source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             axes: self
@@ -1262,7 +1262,7 @@ pub struct TurbulenceNode {
 }
 
 impl TurbulenceNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> TurbulenceExpr {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> TurbulenceExpr {
         TurbulenceExpr {
             source: in_pin_expr_or_const(snarl, node_idx, 0, 0.0),
             source_ty: self.source_ty,
@@ -1295,7 +1295,7 @@ pub struct UnaryNode {
 }
 
 impl UnaryNode {
-    fn expr(&self, node_idx: usize, snarl: &Snarl<NoiseNode>) -> Box<Expr> {
+    fn expr(&self, node_idx: NodeId, snarl: &Snarl<NoiseNode>) -> Box<Expr> {
         in_pin_expr_or_const(snarl, node_idx, 0, 0.0)
     }
 }

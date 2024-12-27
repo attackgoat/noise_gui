@@ -11,7 +11,7 @@ use {
         github_link_file, warn_if_debug_build, Align, CentralPanel, Color32, ColorImage, Context,
         Id, Layout,
     },
-    egui_snarl::{ui::SnarlStyle, OutPinId, Snarl},
+    egui_snarl::{ui::SnarlStyle, NodeId, OutPinId, Snarl},
     log::debug,
     std::{
         cell::RefCell,
@@ -36,7 +36,7 @@ use {
     },
 };
 
-pub type NodeExprs = Arc<RwLock<HashMap<usize, (usize, Arc<Expr>)>>>;
+pub type NodeExprs = Arc<RwLock<HashMap<NodeId, (usize, Arc<Expr>)>>>;
 
 pub struct App {
     node_exprs: NodeExprs,
@@ -46,8 +46,8 @@ pub struct App {
 
     snarl: Snarl<NoiseNode>,
     threads: Threads,
-    removed_node_indices: HashSet<usize>,
-    updated_node_indices: HashSet<usize>,
+    removed_node_indices: HashSet<NodeId>,
+    updated_node_indices: HashSet<NodeId>,
     version: usize,
 }
 
@@ -87,9 +87,9 @@ impl App {
         }
     }
 
-    fn all_image_node_indices(snarl: &Snarl<NoiseNode>) -> impl Iterator<Item = usize> + '_ {
+    fn all_image_node_indices(snarl: &Snarl<NoiseNode>) -> impl Iterator<Item = NodeId> + '_ {
         snarl
-            .node_indices()
+            .node_ids()
             .filter_map(|(node_idx, node)| node.has_image().then_some(node_idx))
     }
 
@@ -157,12 +157,12 @@ impl App {
 
     fn update_images(&mut self) {
         thread_local! {
-            static NODE_INDICES: RefCell<Option<HashSet<usize>>> = RefCell::new(Some(Default::default()));
+            static NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
         // HACK: snarl::get_node_mut doesn't return an option and will panic on missing node indices
         let mut node_indices = NODE_INDICES.take().unwrap();
-        for (node_idx, _) in self.snarl.node_indices() {
+        for (node_idx, _) in self.snarl.node_ids() {
             node_indices.insert(node_idx);
         }
 
@@ -177,7 +177,10 @@ impl App {
                 texture: Some(texture),
                 version,
                 ..
-            }) = self.snarl.get_node_mut(node_idx).image_mut()
+            }) = self
+                .snarl
+                .get_node_mut(node_idx)
+                .and_then(NoiseNode::image_mut)
             {
                 // We have to check to make sure the current image version is the same one the
                 // thread has responded with - if not a new request will be received later
@@ -199,8 +202,8 @@ impl App {
 
     fn update_nodes(&mut self, ctx: &Context) {
         thread_local! {
-            static CHILD_NODE_INDICES: RefCell<Option<HashSet<usize>>> = RefCell::new(Some(Default::default()));
-            static TEMP_NODE_INDICES: RefCell<Option<Vec<usize>>> = RefCell::new(Some(Default::default()));
+            static CHILD_NODE_INDICES: RefCell<Option<HashSet<NodeId>>> = RefCell::new(Some(Default::default()));
+            static TEMP_NODE_INDICES: RefCell<Option<Vec<NodeId>>> = RefCell::new(Some(Default::default()));
         }
 
         let mut child_node_indices = CHILD_NODE_INDICES.take().unwrap();
@@ -233,14 +236,17 @@ impl App {
         // First we update the version of all updated images
         self.version = self.version.wrapping_add(1);
         for node_idx in self.updated_node_indices.iter().copied() {
-            let node = self.snarl.get_node_mut(node_idx);
-            if let Some(image) = node.image_mut() {
+            if let Some(image) = self
+                .snarl
+                .get_node_mut(node_idx)
+                .and_then(NoiseNode::image_mut)
+            {
                 // Ensure all image nodes contain a valid texture
                 if image.texture.is_none() {
-                    debug!("Creating image for #{node_idx}");
+                    debug!("Creating image for #{node_idx:?}");
 
                     image.texture = Some(ctx.load_texture(
-                        format!("image{node_idx}"),
+                        format!("image{node_idx:?}"),
                         ColorImage::new(Self::IMAGE_SIZE, Color32::TRANSPARENT),
                         Default::default(),
                     ));
@@ -250,7 +256,7 @@ impl App {
             }
         }
 
-        type Request = (usize, usize, ImageInfo);
+        type Request = (NodeId, usize, ImageInfo);
 
         thread_local! {
             static REQUESTS: RefCell<Option<Vec<Request>>> = RefCell::new(Some(Default::default()));
@@ -260,9 +266,9 @@ impl App {
 
         // Next we update the expressions of all updated images and request new images
         for node_idx in self.updated_node_indices.drain() {
-            let node = self.snarl.get_node(node_idx);
+            let node = self.snarl.get_node(node_idx).unwrap();
             if let Some(image) = node.image() {
-                debug!("Updating image for #{node_idx}");
+                debug!("Updating image for #{node_idx:?}");
 
                 self.node_exprs.write().unwrap().insert(
                     node_idx,
