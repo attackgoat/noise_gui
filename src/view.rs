@@ -57,7 +57,7 @@ impl<'a> Viewer<'a> {
         distance_fn: &mut DistanceFunction,
         node_id: NodeId,
     ) {
-        ComboBox::from_id_source(0)
+        ComboBox::from_id_salt(0)
             .selected_text(format!("{distance_fn:?}"))
             .show_ui(ui, |ui| {
                 ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
@@ -185,7 +185,7 @@ impl<'a> Viewer<'a> {
 
     // TODO: Make generic (see other combo box functions)
     fn return_ty_combo_box(&mut self, ui: &mut Ui, return_ty: &mut ReturnType, node_id: NodeId) {
-        ComboBox::from_id_source(1)
+        ComboBox::from_id_salt(1)
             .selected_text(format!("{return_ty:?}"))
             .show_ui(ui, |ui| {
                 ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
@@ -203,7 +203,7 @@ impl<'a> Viewer<'a> {
 
     // TODO: Make generic (see other combo box functions)
     fn source_ty_combo_box(&mut self, ui: &mut Ui, source: &mut SourceType, node_id: NodeId) {
-        ComboBox::from_id_source(0)
+        ComboBox::from_id_salt(0)
             .selected_text(format!("{source:?}"))
             .show_ui(ui, |ui| {
                 ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);

@@ -6,14 +6,14 @@ edition = "2021"
 
 [dependencies]
 crossbeam-channel = "0.5"
-eframe = { version = "0.28", default-features = false, features = [
+eframe = { version = "0.29", default-features = false, features = [
     "accesskit", 
     "default_fonts",
     "glow",
     "persistence",
 ] }
-egui = "0.28"
-egui-snarl = { git = "https://github.com/zakarumych/egui-snarl", features = ["serde"], rev = "5df33348456c0a0e609c85073e38a6c280c3423e" }
+egui = "0.29"
+egui-snarl = { git = "https://github.com/zakarumych/egui-snarl", features = ["serde"], rev = "1c9a80dd1e576d7a957dd633f417acab09d023c4" }
 log = "0.4"
 noise = "0.8"
 ordered-float = "4.2"

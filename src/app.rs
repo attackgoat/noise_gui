@@ -372,7 +372,7 @@ impl eframe::App for App {
                 });
                 ui.add_space(16.0);
 
-                widgets::global_dark_light_mode_buttons(ui);
+                widgets::global_theme_preference_switch(ui);
             });
         });
 
@@ -383,7 +383,7 @@ impl eframe::App for App {
                     updated_node_ids: &mut self.updated_node_ids,
                 },
                 &SnarlStyle {
-                    _collapsible: Some(true),
+                    collapsible: Some(true),
                     ..Default::default()
                 },
                 Id::new("snarl"),
