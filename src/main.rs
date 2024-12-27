@@ -43,7 +43,7 @@ fn main() {
 
     wasm_bindgen_futures::spawn_local(async {
         let document = web_sys::window()
-            .expect("No window")
+            .expect("No window.")
             .document()
             .expect("No document");
         let canvas = document
