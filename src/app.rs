@@ -9,9 +9,12 @@ use {
     eframe::{get_value, set_value, CreationContext, Frame, Storage, APP_KEY},
     egui::{
         github_link_file, warn_if_debug_build, Align, CentralPanel, Color32, ColorImage, Context,
-        Id, Layout,
+        Id, Layout, Vec2,
     },
-    egui_snarl::{ui::SnarlStyle, NodeId, OutPinId, Snarl},
+    egui_snarl::{
+        ui::{BackgroundPattern, Grid, SnarlStyle},
+        NodeId, OutPinId, Snarl,
+    },
     log::debug,
     std::{
         cell::RefCell,
@@ -63,7 +66,7 @@ impl App {
 
     pub fn new(#[allow(unused_variables)] cc: &CreationContext<'_>) -> Self {
         let snarl: Snarl<NoiseNode> = if let Some(storage) = cc.storage {
-            get_value(storage, "new_app").unwrap_or_default()
+            get_value(storage, APP_KEY).unwrap_or_default()
         } else {
             Default::default()
         };
@@ -383,6 +386,10 @@ impl eframe::App for App {
                     updated_node_ids: &mut self.updated_node_ids,
                 },
                 &SnarlStyle {
+                    bg_pattern: Some(BackgroundPattern::Grid(Grid::new(
+                        Vec2::new(20.0, 20.0),
+                        0.0,
+                    ))),
                     collapsible: Some(true),
                     ..Default::default()
                 },

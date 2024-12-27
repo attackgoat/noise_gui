@@ -9,12 +9,9 @@ use {
             WorleyNode,
         },
     },
-    egui::{
-        epaint::PathShape, vec2, Align, Color32, ComboBox, DragValue, Layout, Pos2, Shape, Stroke,
-        TextEdit, TextWrapMode, Ui, Vec2,
-    },
+    egui::{Align, Color32, ComboBox, DragValue, Layout, Pos2, Stroke, TextEdit, TextWrapMode, Ui},
     egui_snarl::{
-        ui::{ PinInfo, SnarlViewer},
+        ui::{PinInfo, PinShape, SnarlViewer},
         InPin, NodeId, OutPin, OutPinId, Snarl,
     },
     log::debug,
@@ -133,9 +130,12 @@ impl<'a> Viewer<'a> {
 
     fn image_pin_info(is_input: bool, filled: bool) -> PinInfo {
         PinInfo::default()
-            .with_fill(Color32::from_gray(192))
-            .with_stroke(Stroke::new(1.5, Color32::from_white_alpha(192)))
-            .with_shape(egui_snarl::ui::PinShape::Star)
+            .with_fill(Color32::from_gray(if is_input { 192 } else { 128 }))
+            .with_stroke(Stroke::new(
+                1.5,
+                Color32::from_white_alpha(if filled { 192 } else { 128 }),
+            ))
+            .with_shape(PinShape::Square)
     }
 
     fn operation_pin_info(is_input: bool, filled: bool) -> PinInfo {
@@ -188,16 +188,16 @@ impl<'a> Viewer<'a> {
             });
     }
 
-    fn scalar_pin_info(is_input: bool, filled: bool, fill: Color32) -> PinInfo {
+    fn scalar_pin_info(_is_input: bool, filled: bool, fill: Color32) -> PinInfo {
         let (r, g, b, _) = fill.to_tuple();
 
         PinInfo::default()
             .with_fill(fill)
             .with_stroke(Stroke::new(
                 1.5,
-                Color32::from_rgba_unmultiplied(r, g, b, 192),
+                Color32::from_rgba_unmultiplied(r, g, b, if filled { 192 } else { 128 }),
             ))
-            .with_shape(egui_snarl::ui::PinShape::Triangle)
+            .with_shape(PinShape::Triangle)
     }
 
     fn u32_pin_info(is_input: bool, filled: bool) -> PinInfo {
@@ -2518,6 +2518,10 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     .is_empty(),
             ),
         }
+    }
+
+    fn has_graph_menu(&mut self, _pos: egui::Pos2, _snarl: &mut Snarl<NoiseNode>) -> bool {
+        true
     }
 
     fn show_graph_menu(
