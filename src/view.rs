@@ -11,7 +11,7 @@ use {
     },
     egui::{
         epaint::PathShape, vec2, Align, Color32, ComboBox, DragValue, Layout, Pos2, Shape, Stroke,
-        TextEdit, Ui, Vec2,
+        TextEdit, TextWrapMode, Ui, Vec2,
     },
     egui_snarl::{
         ui::{CustomPinShape, PinInfo, SnarlViewer},
@@ -60,7 +60,7 @@ impl<'a> Viewer<'a> {
         ComboBox::from_id_source(0)
             .selected_text(format!("{distance_fn:?}"))
             .show_ui(ui, |ui| {
-                ui.style_mut().wrap = Some(false);
+                ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                 ui.set_min_width(60.0);
                 for value in [
                     DistanceFunction::Chebyshev,
@@ -104,7 +104,7 @@ impl<'a> Viewer<'a> {
             |ui| {
                 ui.set_height(16.0 * scale);
                 if ui
-                    .add(DragValue::new(value).clamp_range(1..=MAX_FRACTAL_OCTAVES))
+                    .add(DragValue::new(value).range(1..=MAX_FRACTAL_OCTAVES))
                     .changed()
                 {
                     self.updated_node_ids.insert(node_id);
@@ -171,7 +171,7 @@ impl<'a> Viewer<'a> {
                         points,
                         closed: true,
                         fill,
-                        stroke,
+                        stroke: stroke.into(),
                     }));
                 },
             )))
@@ -188,7 +188,7 @@ impl<'a> Viewer<'a> {
         ComboBox::from_id_source(1)
             .selected_text(format!("{return_ty:?}"))
             .show_ui(ui, |ui| {
-                ui.style_mut().wrap = Some(false);
+                ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                 ui.set_min_width(60.0);
                 for value in [ReturnType::Distance, ReturnType::Value] {
                     if ui
@@ -206,7 +206,7 @@ impl<'a> Viewer<'a> {
         ComboBox::from_id_source(0)
             .selected_text(format!("{source:?}"))
             .show_ui(ui, |ui| {
-                ui.style_mut().wrap = Some(false);
+                ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                 ui.set_min_width(60.0);
                 for value in [
                     SourceType::OpenSimplex,
@@ -257,7 +257,7 @@ impl<'a> Viewer<'a> {
                         points,
                         closed: true,
                         fill,
-                        stroke,
+                        stroke: stroke.into(),
                     }));
 
                     let radius = 0.5 * size.x;

@@ -63,7 +63,7 @@ impl App {
 
     pub fn new(#[allow(unused_variables)] cc: &CreationContext<'_>) -> Self {
         let snarl: Snarl<NoiseNode> = if let Some(storage) = cc.storage {
-            get_value(storage, APP_KEY).unwrap_or_default()
+            get_value(storage, "new_app").unwrap_or_default()
         } else {
             Default::default()
         };
