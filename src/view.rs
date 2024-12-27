@@ -11,7 +11,7 @@ use {
     },
     egui::{
         epaint::PathShape, vec2, Align, Color32, ComboBox, DragValue, Layout, Pos2, Shape, Stroke,
-        Style, TextEdit, Ui, Vec2,
+        TextEdit, Ui, Vec2,
     },
     egui_snarl::{
         ui::{CustomPinShape, PinInfo, SnarlViewer},
@@ -2591,25 +2591,13 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         }
     }
 
-    fn input_color(
+    fn show_graph_menu(
         &mut self,
-        _pin: &InPin,
-        _style: &Style,
-        _snarl: &mut Snarl<NoiseNode>,
-    ) -> Color32 {
-        unimplemented!()
-    }
-
-    fn output_color(
-        &mut self,
-        _pin: &OutPin,
-        _style: &Style,
-        _snarl: &mut Snarl<NoiseNode>,
-    ) -> Color32 {
-        unimplemented!()
-    }
-
-    fn graph_menu(&mut self, pos: Pos2, ui: &mut Ui, _scale: f32, snarl: &mut Snarl<NoiseNode>) {
+        pos: Pos2,
+        ui: &mut Ui,
+        _scale: f32,
+        snarl: &mut Snarl<NoiseNode>,
+    ) {
         ui.label("Add node");
 
         ui.menu_button("Combiners", |ui| {
@@ -2870,7 +2858,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         });
     }
 
-    fn node_menu(
+    fn show_node_menu(
         &mut self,
         node_id: NodeId,
         inputs: &[InPin],

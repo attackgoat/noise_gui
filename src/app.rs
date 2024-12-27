@@ -383,7 +383,7 @@ impl eframe::App for App {
                     updated_node_ids: &mut self.updated_node_ids,
                 },
                 &SnarlStyle {
-                    collapsible: true,
+                    _collapsible: Some(true),
                     ..Default::default()
                 },
                 Id::new("snarl"),
