@@ -7,8 +7,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(37),
-                output_node_indices: [
+                input_node_id: Some(37),
+                output_node_ids: [
                     40,
                 ],
                 scale: Value(0.375),
@@ -27,7 +27,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 source_ty: Perlin,
@@ -46,7 +46,7 @@
         2: (
             value: U32((
                 name: "Seed",
-                output_node_indices: [
+                output_node_ids: [
                     173,
                     211,
                     1,
@@ -92,7 +92,7 @@
         3: (
             value: F64((
                 name: "ContinentFrequency",
-                output_node_indices: [
+                output_node_ids: [
                     45,
                     39,
                     51,
@@ -117,7 +117,7 @@
         4: (
             value: F64((
                 name: "ContinentLacunarity",
-                output_node_indices: [
+                output_node_ids: [
                     189,
                     1,
                     234,
@@ -140,11 +140,11 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(1),
-                output_node_indices: [
+                input_node_id: Some(1),
+                output_node_ids: [
                     40,
                 ],
-                control_point_node_indices: [
+                control_point_node_ids: [
                     Some(8),
                     Some(12),
                     Some(15),
@@ -166,7 +166,7 @@
         6: (
             value: F64((
                 name: "SeaLevel",
-                output_node_indices: [
+                output_node_ids: [
                     32,
                     7,
                     22,
@@ -207,7 +207,7 @@
         7: (
             value: F64Operation((
                 inputs: (Value(-2.0), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     8,
                 ],
                 op_ty: Add,
@@ -220,7 +220,7 @@
         ),
         8: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(7),
@@ -235,7 +235,7 @@
         9: (
             value: F64Operation((
                 inputs: (Value(-1.625), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     8,
                 ],
                 op_ty: Add,
@@ -249,7 +249,7 @@
         10: (
             value: F64Operation((
                 inputs: (Value(-1.0), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     12,
                 ],
                 op_ty: Add,
@@ -263,7 +263,7 @@
         11: (
             value: F64Operation((
                 inputs: (Value(-1.375), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     12,
                 ],
                 op_ty: Add,
@@ -276,7 +276,7 @@
         ),
         12: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(10),
@@ -291,7 +291,7 @@
         13: (
             value: F64Operation((
                 inputs: (Value(0.0), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     15,
                 ],
                 op_ty: Add,
@@ -305,7 +305,7 @@
         14: (
             value: F64Operation((
                 inputs: (Value(-0.375), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     15,
                 ],
                 op_ty: Add,
@@ -318,7 +318,7 @@
         ),
         15: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(13),
@@ -333,7 +333,7 @@
         16: (
             value: F64Operation((
                 inputs: (Value(0.0625), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     18,
                 ],
                 op_ty: Add,
@@ -347,7 +347,7 @@
         17: (
             value: F64Operation((
                 inputs: (Value(0.125), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     18,
                 ],
                 op_ty: Add,
@@ -360,7 +360,7 @@
         ),
         18: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(16),
@@ -375,7 +375,7 @@
         19: (
             value: F64Operation((
                 inputs: (Value(0.125), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     27,
                 ],
                 op_ty: Add,
@@ -389,7 +389,7 @@
         20: (
             value: F64Operation((
                 inputs: (Value(0.25), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     27,
                 ],
                 op_ty: Add,
@@ -403,7 +403,7 @@
         21: (
             value: F64Operation((
                 inputs: (Value(0.25), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     28,
                 ],
                 op_ty: Add,
@@ -417,7 +417,7 @@
         22: (
             value: F64Operation((
                 inputs: (Value(1.0), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     28,
                 ],
                 op_ty: Add,
@@ -431,7 +431,7 @@
         23: (
             value: F64Operation((
                 inputs: (Value(0.5), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     29,
                 ],
                 op_ty: Add,
@@ -445,7 +445,7 @@
         24: (
             value: F64Operation((
                 inputs: (Value(0.25), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     29,
                 ],
                 op_ty: Add,
@@ -459,7 +459,7 @@
         25: (
             value: F64Operation((
                 inputs: (Value(0.75), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     30,
                 ],
                 op_ty: Add,
@@ -473,7 +473,7 @@
         26: (
             value: F64Operation((
                 inputs: (Value(0.25), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     30,
                 ],
                 op_ty: Add,
@@ -486,7 +486,7 @@
         ),
         27: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(19),
@@ -500,7 +500,7 @@
         ),
         28: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(21),
@@ -514,7 +514,7 @@
         ),
         29: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(23),
@@ -528,7 +528,7 @@
         ),
         30: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(25),
@@ -543,7 +543,7 @@
         31: (
             value: F64Operation((
                 inputs: (Value(1.0), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     35,
                 ],
                 op_ty: Add,
@@ -557,7 +557,7 @@
         32: (
             value: F64Operation((
                 inputs: (Value(0.5), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     35,
                 ],
                 op_ty: Add,
@@ -571,7 +571,7 @@
         33: (
             value: F64Operation((
                 inputs: (Value(2.0), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     36,
                 ],
                 op_ty: Add,
@@ -585,7 +585,7 @@
         34: (
             value: F64Operation((
                 inputs: (Value(0.5), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     36,
                 ],
                 op_ty: Add,
@@ -598,7 +598,7 @@
         ),
         35: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(31),
@@ -612,7 +612,7 @@
         ),
         36: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     5,
                 ],
                 input: Node(33),
@@ -631,7 +631,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     0,
                 ],
                 source_ty: Perlin,
@@ -650,7 +650,7 @@
         38: (
             value: U32Operation((
                 inputs: (Node(2), Value(1)),
-                output_node_indices: [
+                output_node_ids: [
                     37,
                 ],
                 op_ty: Add,
@@ -664,7 +664,7 @@
         39: (
             value: F64Operation((
                 inputs: (Node(3), Value(4.34375)),
-                output_node_indices: [
+                output_node_ids: [
                     37,
                 ],
                 op_ty: Multiply,
@@ -682,8 +682,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(0), Some(5)),
-                output_node_indices: [
+                input_node_ids: (Some(0), Some(5)),
+                output_node_ids: [
                     41,
                 ],
             )),
@@ -700,8 +700,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(40),
-                output_node_indices: [
+                input_node_id: Some(40),
+                output_node_ids: [
                     42,
                     54,
                 ],
@@ -721,8 +721,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(41),
-                output_node_indices: [
+                input_node_id: Some(41),
+                output_node_ids: [
                     49,
                 ],
                 source_ty: Perlin,
@@ -740,7 +740,7 @@
         43: (
             value: U32Operation((
                 inputs: (Node(2), Value(10)),
-                output_node_indices: [
+                output_node_ids: [
                     42,
                 ],
                 op_ty: Add,
@@ -754,7 +754,7 @@
         44: (
             value: F64Operation((
                 inputs: (Node(3), Value(15.25)),
-                output_node_indices: [
+                output_node_ids: [
                     42,
                 ],
                 op_ty: Multiply,
@@ -768,7 +768,7 @@
         45: (
             value: F64Operation((
                 inputs: (Node(3), Value(113.75)),
-                output_node_indices: [
+                output_node_ids: [
                     42,
                 ],
                 op_ty: Divide,
@@ -782,7 +782,7 @@
         46: (
             value: U32Operation((
                 inputs: (Node(2), Value(11)),
-                output_node_indices: [
+                output_node_ids: [
                     49,
                 ],
                 op_ty: Add,
@@ -796,7 +796,7 @@
         47: (
             value: F64Operation((
                 inputs: (Node(3), Value(47.25)),
-                output_node_indices: [
+                output_node_ids: [
                     49,
                 ],
                 op_ty: Multiply,
@@ -810,7 +810,7 @@
         48: (
             value: F64Operation((
                 inputs: (Node(3), Value(433.75)),
-                output_node_indices: [
+                output_node_ids: [
                     49,
                 ],
                 op_ty: Divide,
@@ -828,8 +828,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(42),
-                output_node_indices: [
+                input_node_id: Some(42),
+                output_node_ids: [
                     53,
                 ],
                 source_ty: Perlin,
@@ -847,7 +847,7 @@
         50: (
             value: U32Operation((
                 inputs: (Node(2), Value(12)),
-                output_node_indices: [
+                output_node_ids: [
                     53,
                 ],
                 op_ty: Add,
@@ -861,7 +861,7 @@
         51: (
             value: F64Operation((
                 inputs: (Node(3), Value(95.25)),
-                output_node_indices: [
+                output_node_ids: [
                     53,
                 ],
                 op_ty: Multiply,
@@ -875,7 +875,7 @@
         52: (
             value: F64Operation((
                 inputs: (Node(3), Value(1019.75)),
-                output_node_indices: [
+                output_node_ids: [
                     53,
                 ],
                 op_ty: Divide,
@@ -893,8 +893,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(49),
-                output_node_indices: [
+                input_node_id: Some(49),
+                output_node_ids: [
                     54,
                 ],
                 source_ty: Perlin,
@@ -916,9 +916,9 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(41), Some(53)),
-                control_node_idx: Some(41),
-                output_node_indices: [
+                input_node_ids: (Some(41), Some(53)),
+                control_node_id: Some(41),
+                output_node_ids: [
                     242,
                     227,
                     238,
@@ -937,7 +937,7 @@
         55: (
             value: F64Operation((
                 inputs: (Node(6), Value(0.375)),
-                output_node_indices: [
+                output_node_ids: [
                     54,
                 ],
                 op_ty: Subtract,
@@ -951,7 +951,7 @@
         56: (
             value: F64Operation((
                 inputs: (Node(6), Value(1000.0375)),
-                output_node_indices: [
+                output_node_ids: [
                     54,
                 ],
                 op_ty: Add,
@@ -965,7 +965,7 @@
         57: (
             value: U32Operation((
                 inputs: (Node(2), Value(20)),
-                output_node_indices: [
+                output_node_ids: [
                     62,
                 ],
                 op_ty: Add,
@@ -979,7 +979,7 @@
         58: (
             value: F64Operation((
                 inputs: (Node(3), Value(18.125)),
-                output_node_indices: [
+                output_node_ids: [
                     62,
                 ],
                 op_ty: Multiply,
@@ -993,7 +993,7 @@
         59: (
             value: F64Operation((
                 inputs: (Node(3), Value(20.59375)),
-                output_node_indices: [
+                output_node_ids: [
                     60,
                 ],
                 op_ty: Divide,
@@ -1007,7 +1007,7 @@
         60: (
             value: F64Operation((
                 inputs: (Node(59), Node(61)),
-                output_node_indices: [
+                output_node_ids: [
                     62,
                 ],
                 op_ty: Multiply,
@@ -1021,7 +1021,7 @@
         61: (
             value: F64((
                 name: "TerrainOffset",
-                output_node_indices: [
+                output_node_ids: [
                     60,
                 ],
                 value: 1.0,
@@ -1039,8 +1039,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(54),
-                output_node_indices: [
+                input_node_id: Some(54),
+                output_node_ids: [
                     63,
                 ],
                 source_ty: Perlin,
@@ -1062,13 +1062,13 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(62),
-                output_node_indices: [
+                input_node_id: Some(62),
+                output_node_ids: [
                     248,
                     264,
                 ],
                 inverted: false,
-                control_point_node_indices: [
+                control_point_node_ids: [
                     Some(64),
                     Some(68),
                     Some(65),
@@ -1083,7 +1083,7 @@
         64: (
             value: F64((
                 name: "negative_one",
-                output_node_indices: [
+                output_node_ids: [
                     63,
                 ],
                 value: -1.0,
@@ -1097,7 +1097,7 @@
         65: (
             value: F64((
                 name: "one",
-                output_node_indices: [
+                output_node_ids: [
                     63,
                 ],
                 value: 1.0,
@@ -1111,7 +1111,7 @@
         66: (
             value: F64((
                 name: "ShelfLevel",
-                output_node_indices: [
+                output_node_ids: [
                     242,
                     243,
                     227,
@@ -1128,7 +1128,7 @@
         67: (
             value: F64Operation((
                 inputs: (Node(6), Value(2.0)),
-                output_node_indices: [
+                output_node_ids: [
                     68,
                 ],
                 op_ty: Divide,
@@ -1142,7 +1142,7 @@
         68: (
             value: F64Operation((
                 inputs: (Node(66), Node(67)),
-                output_node_indices: [
+                output_node_ids: [
                     63,
                 ],
                 op_ty: Add,
@@ -1160,7 +1160,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     72,
                 ],
                 source_ty: Perlin,
@@ -1180,7 +1180,7 @@
         70: (
             value: U32Operation((
                 inputs: (Node(2), Value(30)),
-                output_node_indices: [
+                output_node_ids: [
                     69,
                 ],
                 op_ty: Add,
@@ -1194,7 +1194,7 @@
         71: (
             value: F64((
                 name: "MountainLacunarity",
-                output_node_indices: [
+                output_node_ids: [
                     91,
                     69,
                     204,
@@ -1218,8 +1218,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(69),
-                output_node_indices: [
+                input_node_id: Some(69),
+                output_node_ids: [
                     76,
                 ],
                 scale: Value(0.5),
@@ -1234,7 +1234,7 @@
         73: (
             value: U32Operation((
                 inputs: (Node(2), Value(31)),
-                output_node_indices: [
+                output_node_ids: [
                     74,
                 ],
                 op_ty: Add,
@@ -1252,7 +1252,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     75,
                 ],
                 source_ty: Perlin,
@@ -1276,8 +1276,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(74),
-                output_node_indices: [
+                input_node_id: Some(74),
+                output_node_ids: [
                     76,
                 ],
                 scale: Value(-2.0),
@@ -1296,9 +1296,9 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(77), Some(72)),
-                control_node_idx: Some(75),
-                output_node_indices: [
+                input_node_ids: (Some(77), Some(72)),
+                control_node_id: Some(75),
+                output_node_ids: [
                     78,
                 ],
             )),
@@ -1311,7 +1311,7 @@
         77: (
             value: F64((
                 name: "negative_one",
-                output_node_indices: [
+                output_node_ids: [
                     76,
                 ],
                 value: -1.0,
@@ -1329,8 +1329,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(76),
-                output_node_indices: [
+                input_node_id: Some(76),
+                output_node_ids: [
                     87,
                 ],
                 source_ty: Perlin,
@@ -1348,7 +1348,7 @@
         79: (
             value: U32Operation((
                 inputs: (Node(2), Value(33)),
-                output_node_indices: [
+                output_node_ids: [
                     87,
                 ],
                 op_ty: Add,
@@ -1362,7 +1362,7 @@
         80: (
             value: U32Operation((
                 inputs: (Node(2), Value(32)),
-                output_node_indices: [
+                output_node_ids: [
                     78,
                 ],
                 op_ty: Add,
@@ -1376,7 +1376,7 @@
         81: (
             value: F64((
                 name: "MountainsTwist",
-                output_node_indices: [
+                output_node_ids: [
                     97,
                     85,
                     86,
@@ -1392,7 +1392,7 @@
         82: (
             value: F64((
                 name: "one",
-                output_node_indices: [
+                output_node_ids: [
                     84,
                     83,
                 ],
@@ -1407,7 +1407,7 @@
         83: (
             value: F64Operation((
                 inputs: (Node(82), Value(120157.0)),
-                output_node_indices: [
+                output_node_ids: [
                     85,
                 ],
                 op_ty: Divide,
@@ -1421,7 +1421,7 @@
         84: (
             value: F64Operation((
                 inputs: (Node(82), Value(6730.0)),
-                output_node_indices: [
+                output_node_ids: [
                     86,
                 ],
                 op_ty: Divide,
@@ -1435,7 +1435,7 @@
         85: (
             value: F64Operation((
                 inputs: (Node(83), Node(81)),
-                output_node_indices: [
+                output_node_ids: [
                     87,
                 ],
                 op_ty: Multiply,
@@ -1449,7 +1449,7 @@
         86: (
             value: F64Operation((
                 inputs: (Node(84), Node(81)),
-                output_node_indices: [
+                output_node_ids: [
                     78,
                 ],
                 op_ty: Multiply,
@@ -1467,8 +1467,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(78),
-                output_node_indices: [
+                input_node_id: Some(78),
+                output_node_ids: [
                     106,
                     105,
                 ],
@@ -1487,7 +1487,7 @@
         88: (
             value: U32Operation((
                 inputs: (Node(2), Value(40)),
-                output_node_indices: [
+                output_node_ids: [
                     90,
                 ],
                 op_ty: Add,
@@ -1501,7 +1501,7 @@
         89: (
             value: U32Operation((
                 inputs: (Node(2), Value(41)),
-                output_node_indices: [
+                output_node_ids: [
                     91,
                 ],
                 op_ty: Add,
@@ -1519,7 +1519,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     92,
                 ],
                 source_ty: Perlin,
@@ -1543,7 +1543,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     92,
                 ],
                 source_ty: Perlin,
@@ -1567,8 +1567,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(91), Some(90)),
-                output_node_indices: [
+                input_node_ids: (Some(91), Some(90)),
+                output_node_ids: [
                     96,
                 ],
             )),
@@ -1581,7 +1581,7 @@
         93: (
             value: U32Operation((
                 inputs: (Node(2), Value(42)),
-                output_node_indices: [
+                output_node_ids: [
                     96,
                 ],
                 op_ty: Add,
@@ -1595,7 +1595,7 @@
         94: (
             value: F64((
                 name: "one",
-                output_node_indices: [
+                output_node_ids: [
                     95,
                 ],
                 value: 1.0,
@@ -1609,7 +1609,7 @@
         95: (
             value: F64Operation((
                 inputs: (Node(94), Value(180371.0)),
-                output_node_indices: [
+                output_node_ids: [
                     97,
                 ],
                 op_ty: Divide,
@@ -1627,8 +1627,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(92),
-                output_node_indices: [
+                input_node_id: Some(92),
+                output_node_ids: [
                     104,
                 ],
                 source_ty: Perlin,
@@ -1646,7 +1646,7 @@
         97: (
             value: F64Operation((
                 inputs: (Node(95), Node(81)),
-                output_node_indices: [
+                output_node_ids: [
                     96,
                 ],
                 op_ty: Multiply,
@@ -1660,7 +1660,7 @@
         98: (
             value: U32Operation((
                 inputs: (Node(2), Value(51)),
-                output_node_indices: [
+                output_node_ids: [
                     101,
                 ],
                 op_ty: Add,
@@ -1674,7 +1674,7 @@
         99: (
             value: U32Operation((
                 inputs: (Node(2), Value(50)),
-                output_node_indices: [
+                output_node_ids: [
                     100,
                 ],
                 op_ty: Add,
@@ -1692,7 +1692,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     102,
                 ],
                 source_ty: Perlin,
@@ -1716,7 +1716,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     102,
                 ],
                 source_ty: Perlin,
@@ -1740,8 +1740,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(101), Some(100)),
-                output_node_indices: [
+                input_node_ids: (Some(101), Some(100)),
+                output_node_ids: [
                     103,
                 ],
             )),
@@ -1758,8 +1758,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(102),
-                output_node_indices: [
+                input_node_id: Some(102),
+                output_node_ids: [
                     106,
                 ],
                 scale: Value(0.03125),
@@ -1778,8 +1778,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(96),
-                output_node_indices: [
+                input_node_id: Some(96),
+                output_node_ids: [
                     105,
                 ],
                 scale: Value(0.25),
@@ -1798,8 +1798,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(104), Some(87)),
-                output_node_indices: [
+                input_node_ids: (Some(104), Some(87)),
+                output_node_ids: [
                     106,
                 ],
             )),
@@ -1816,9 +1816,9 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(103), Some(105)),
-                control_node_idx: Some(87),
-                output_node_indices: [
+                input_node_ids: (Some(103), Some(105)),
+                control_node_id: Some(87),
+                output_node_ids: [
                     107,
                 ],
                 lower_bound: Value(-0.5),
@@ -1838,8 +1838,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(106),
-                output_node_indices: [
+                input_node_id: Some(106),
+                output_node_ids: [
                     108,
                 ],
                 scale: Value(0.8),
@@ -1858,8 +1858,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(107),
-                output_node_indices: [
+                input_node_id: Some(107),
+                output_node_ids: [
                     202,
                 ],
                 exponent: Node(109),
@@ -1873,7 +1873,7 @@
         109: (
             value: F64((
                 name: "MountainGlaciation",
-                output_node_indices: [
+                output_node_ids: [
                     108,
                 ],
                 value: 1.375,
@@ -1887,7 +1887,7 @@
         110: (
             value: U32Operation((
                 inputs: (Node(2), Value(60)),
-                output_node_indices: [
+                output_node_ids: [
                     112,
                 ],
                 op_ty: Add,
@@ -1901,7 +1901,7 @@
         111: (
             value: F64((
                 name: "HillsLacunarity",
-                output_node_indices: [
+                output_node_ids: [
                     112,
                     115,
                     212,
@@ -1921,7 +1921,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     113,
                 ],
                 source_ty: Perlin,
@@ -1944,8 +1944,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(112),
-                output_node_indices: [
+                input_node_id: Some(112),
+                output_node_ids: [
                     117,
                 ],
                 scale: Value(0.5),
@@ -1960,7 +1960,7 @@
         114: (
             value: U32Operation((
                 inputs: (Node(2), Value(61)),
-                output_node_indices: [
+                output_node_ids: [
                     115,
                 ],
                 op_ty: Add,
@@ -1978,7 +1978,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     116,
                 ],
                 source_ty: Perlin,
@@ -2002,8 +2002,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(115),
-                output_node_indices: [
+                input_node_id: Some(115),
+                output_node_ids: [
                     117,
                 ],
                 scale: Value(-2.0),
@@ -2022,9 +2022,9 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(118), Some(116)),
-                control_node_idx: Some(113),
-                output_node_indices: [
+                input_node_ids: (Some(118), Some(116)),
+                control_node_id: Some(113),
+                output_node_ids: [
                     119,
                 ],
             )),
@@ -2037,7 +2037,7 @@
         118: (
             value: F64((
                 name: "negative_one",
-                output_node_indices: [
+                output_node_ids: [
                     117,
                 ],
                 value: -1.0,
@@ -2055,8 +2055,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(117),
-                output_node_indices: [
+                input_node_id: Some(117),
+                output_node_ids: [
                     120,
                 ],
                 scale: Value(0.75),
@@ -2075,8 +2075,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(119),
-                output_node_indices: [
+                input_node_id: Some(119),
+                output_node_ids: [
                     123,
                 ],
                 exponent: Value(1.375),
@@ -2090,7 +2090,7 @@
         121: (
             value: U32Operation((
                 inputs: (Node(2), Value(62)),
-                output_node_indices: [
+                output_node_ids: [
                     123,
                 ],
                 op_ty: Add,
@@ -2104,7 +2104,7 @@
         122: (
             value: U32Operation((
                 inputs: (Node(2), Value(63)),
-                output_node_indices: [
+                output_node_ids: [
                     130,
                 ],
                 op_ty: Add,
@@ -2122,8 +2122,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(120),
-                output_node_indices: [
+                input_node_id: Some(120),
+                output_node_ids: [
                     130,
                 ],
                 source_ty: Perlin,
@@ -2141,7 +2141,7 @@
         124: (
             value: F64((
                 name: "one",
-                output_node_indices: [
+                output_node_ids: [
                     125,
                     128,
                 ],
@@ -2156,7 +2156,7 @@
         125: (
             value: F64Operation((
                 inputs: (Node(124), Value(16921.0)),
-                output_node_indices: [
+                output_node_ids: [
                     126,
                 ],
                 op_ty: Divide,
@@ -2170,7 +2170,7 @@
         126: (
             value: F64Operation((
                 inputs: (Node(125), Node(127)),
-                output_node_indices: [
+                output_node_ids: [
                     123,
                 ],
                 op_ty: Multiply,
@@ -2184,7 +2184,7 @@
         127: (
             value: F64((
                 name: "HillsTwist",
-                output_node_indices: [
+                output_node_ids: [
                     126,
                     129,
                 ],
@@ -2199,7 +2199,7 @@
         128: (
             value: F64Operation((
                 inputs: (Node(124), Value(117529.0)),
-                output_node_indices: [
+                output_node_ids: [
                     129,
                 ],
                 op_ty: Divide,
@@ -2213,7 +2213,7 @@
         129: (
             value: F64Operation((
                 inputs: (Node(128), Node(127)),
-                output_node_indices: [
+                output_node_ids: [
                     130,
                 ],
                 op_ty: Multiply,
@@ -2231,8 +2231,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(123),
-                output_node_indices: [
+                input_node_id: Some(123),
+                output_node_ids: [
                     210,
                 ],
                 source_ty: Perlin,
@@ -2250,7 +2250,7 @@
         131: (
             value: U32Operation((
                 inputs: (Node(2), Value(71)),
-                output_node_indices: [
+                output_node_ids: [
                     136,
                 ],
                 op_ty: Add,
@@ -2264,7 +2264,7 @@
         132: (
             value: U32Operation((
                 inputs: (Node(2), Value(70)),
-                output_node_indices: [
+                output_node_ids: [
                     134,
                 ],
                 op_ty: Add,
@@ -2278,7 +2278,7 @@
         133: (
             value: F64((
                 name: "PlainsLacunarity",
-                output_node_indices: [
+                output_node_ids: [
                     136,
                     134,
                 ],
@@ -2297,7 +2297,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     135,
                 ],
                 source_ty: Perlin,
@@ -2320,8 +2320,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(134),
-                output_node_indices: [
+                input_node_id: Some(134),
+                output_node_ids: [
                     138,
                 ],
                 scale: Value(0.5),
@@ -2340,7 +2340,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     137,
                 ],
                 source_ty: Perlin,
@@ -2363,8 +2363,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(136),
-                output_node_indices: [
+                input_node_id: Some(136),
+                output_node_ids: [
                     138,
                 ],
                 scale: Value(0.5),
@@ -2383,8 +2383,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(137), Some(135)),
-                output_node_indices: [
+                input_node_ids: (Some(137), Some(135)),
+                output_node_ids: [
                     139,
                 ],
             )),
@@ -2401,8 +2401,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(138),
-                output_node_indices: [
+                input_node_id: Some(138),
+                output_node_ids: [
                     218,
                 ],
                 scale: Value(2.0),
@@ -2417,7 +2417,7 @@
         140: (
             value: U32Operation((
                 inputs: (Node(2), Value(81)),
-                output_node_indices: [
+                output_node_ids: [
                     145,
                 ],
                 op_ty: Add,
@@ -2431,7 +2431,7 @@
         141: (
             value: U32Operation((
                 inputs: (Node(2), Value(80)),
-                output_node_indices: [
+                output_node_ids: [
                     142,
                 ],
                 op_ty: Add,
@@ -2449,7 +2449,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     144,
                 ],
                 source_ty: Perlin,
@@ -2469,7 +2469,7 @@
         143: (
             value: F64((
                 name: "BadlandsLacunarity",
-                output_node_indices: [
+                output_node_ids: [
                     149,
                     142,
                 ],
@@ -2488,8 +2488,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(142),
-                output_node_indices: [
+                input_node_id: Some(142),
+                output_node_ids: [
                     147,
                 ],
                 scale: Value(0.875),
@@ -2508,7 +2508,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     146,
                 ],
                 seed: Node(140),
@@ -2529,8 +2529,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(145),
-                output_node_indices: [
+                input_node_id: Some(145),
+                output_node_ids: [
                     147,
                 ],
                 scale: Value(0.25),
@@ -2549,8 +2549,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(144), Some(146)),
-                output_node_indices: [
+                input_node_ids: (Some(144), Some(146)),
+                output_node_ids: [
                     177,
                 ],
             )),
@@ -2563,7 +2563,7 @@
         148: (
             value: U32Operation((
                 inputs: (Node(2), Value(90)),
-                output_node_indices: [
+                output_node_ids: [
                     149,
                 ],
                 op_ty: Add,
@@ -2581,7 +2581,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     151,
                 ],
                 source_ty: Perlin,
@@ -2600,7 +2600,7 @@
         150: (
             value: F64Operation((
                 inputs: (Node(3), Value(839.0)),
-                output_node_indices: [
+                output_node_ids: [
                     149,
                 ],
                 op_ty: Multiply,
@@ -2618,11 +2618,11 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(149),
-                output_node_indices: [
+                input_node_id: Some(149),
+                output_node_ids: [
                     159,
                 ],
-                control_point_node_indices: [
+                control_point_node_ids: [
                     Some(152),
                     Some(153),
                     Some(154),
@@ -2640,7 +2640,7 @@
         ),
         152: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     151,
                 ],
                 input: Value(-2.0),
@@ -2654,7 +2654,7 @@
         ),
         153: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     151,
                 ],
                 input: Value(-1.0),
@@ -2668,7 +2668,7 @@
         ),
         154: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     151,
                 ],
                 input: Value(0.0),
@@ -2682,7 +2682,7 @@
         ),
         155: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     151,
                 ],
                 input: Value(0.5),
@@ -2696,7 +2696,7 @@
         ),
         156: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     151,
                 ],
                 input: Value(0.625),
@@ -2710,7 +2710,7 @@
         ),
         157: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     151,
                 ],
                 input: Value(0.75),
@@ -2724,7 +2724,7 @@
         ),
         158: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     151,
                 ],
                 input: Value(2.0),
@@ -2743,8 +2743,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(151),
-                output_node_indices: [
+                input_node_id: Some(151),
+                output_node_ids: [
                     160,
                 ],
                 lower_bound: Value(-999.125),
@@ -2763,12 +2763,12 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(159),
-                output_node_indices: [
+                input_node_id: Some(159),
+                output_node_ids: [
                     168,
                 ],
                 inverted: false,
-                control_point_node_indices: [
+                control_point_node_ids: [
                     Some(161),
                     Some(162),
                     Some(163),
@@ -2786,7 +2786,7 @@
         161: (
             value: F64((
                 name: "name",
-                output_node_indices: [
+                output_node_ids: [
                     160,
                 ],
                 value: -1.0,
@@ -2800,7 +2800,7 @@
         162: (
             value: F64((
                 name: "name",
-                output_node_indices: [
+                output_node_ids: [
                     160,
                 ],
                 value: -0.875,
@@ -2814,7 +2814,7 @@
         163: (
             value: F64((
                 name: "name",
-                output_node_indices: [
+                output_node_ids: [
                     160,
                 ],
                 value: -0.75,
@@ -2828,7 +2828,7 @@
         164: (
             value: F64((
                 name: "name",
-                output_node_indices: [
+                output_node_ids: [
                     160,
                 ],
                 value: -0.5,
@@ -2842,7 +2842,7 @@
         165: (
             value: F64((
                 name: "name",
-                output_node_indices: [
+                output_node_ids: [
                     160,
                 ],
                 value: 0.0,
@@ -2856,7 +2856,7 @@
         166: (
             value: F64((
                 name: "name",
-                output_node_indices: [
+                output_node_ids: [
                     160,
                 ],
                 value: 1.0,
@@ -2870,7 +2870,7 @@
         167: (
             value: U32Operation((
                 inputs: (Node(2), Value(91)),
-                output_node_indices: [
+                output_node_ids: [
                     168,
                 ],
                 op_ty: Add,
@@ -2888,8 +2888,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(160),
-                output_node_indices: [
+                input_node_id: Some(160),
+                output_node_ids: [
                     174,
                 ],
                 source_ty: Perlin,
@@ -2907,7 +2907,7 @@
         169: (
             value: F64((
                 name: "one",
-                output_node_indices: [
+                output_node_ids: [
                     170,
                     175,
                 ],
@@ -2922,7 +2922,7 @@
         170: (
             value: F64Operation((
                 inputs: (Node(169), Value(141539.0)),
-                output_node_indices: [
+                output_node_ids: [
                     171,
                 ],
                 op_ty: Divide,
@@ -2936,7 +2936,7 @@
         171: (
             value: F64Operation((
                 inputs: (Node(170), Node(172)),
-                output_node_indices: [
+                output_node_ids: [
                     168,
                 ],
                 op_ty: Multiply,
@@ -2950,7 +2950,7 @@
         172: (
             value: F64((
                 name: "BadlandsTwist",
-                output_node_indices: [
+                output_node_ids: [
                     171,
                     176,
                 ],
@@ -2965,7 +2965,7 @@
         173: (
             value: U32Operation((
                 inputs: (Node(2), Value(92)),
-                output_node_indices: [
+                output_node_ids: [
                     174,
                 ],
                 op_ty: Add,
@@ -2983,8 +2983,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(168),
-                output_node_indices: [
+                input_node_id: Some(168),
+                output_node_ids: [
                     178,
                 ],
                 source_ty: Perlin,
@@ -3002,7 +3002,7 @@
         175: (
             value: F64Operation((
                 inputs: (Node(169), Value(211543.0)),
-                output_node_indices: [
+                output_node_ids: [
                     176,
                 ],
                 op_ty: Divide,
@@ -3016,7 +3016,7 @@
         176: (
             value: F64Operation((
                 inputs: (Node(175), Node(172)),
-                output_node_indices: [
+                output_node_ids: [
                     174,
                 ],
                 op_ty: Multiply,
@@ -3034,8 +3034,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(147),
-                output_node_indices: [
+                input_node_id: Some(147),
+                output_node_ids: [
                     178,
                 ],
                 scale: Value(0.25),
@@ -3054,8 +3054,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(174), Some(177)),
-                output_node_indices: [
+                input_node_ids: (Some(174), Some(177)),
+                output_node_ids: [
                     223,
                 ],
             )),
@@ -3068,7 +3068,7 @@
         179: (
             value: U32Operation((
                 inputs: (Node(2), Value(101)),
-                output_node_indices: [
+                output_node_ids: [
                     189,
                 ],
                 op_ty: Add,
@@ -3082,7 +3082,7 @@
         180: (
             value: U32Operation((
                 inputs: (Node(2), Value(100)),
-                output_node_indices: [
+                output_node_ids: [
                     181,
                 ],
                 op_ty: Add,
@@ -3100,7 +3100,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     182,
                 ],
                 source_ty: Perlin,
@@ -3124,11 +3124,11 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(181),
-                output_node_indices: [
+                input_node_id: Some(181),
+                output_node_ids: [
                     197,
                 ],
-                control_point_node_indices: [
+                control_point_node_ids: [
                     Some(183),
                     Some(184),
                     Some(185),
@@ -3145,7 +3145,7 @@
         ),
         183: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     182,
                 ],
                 input: Value(-2.0),
@@ -3159,7 +3159,7 @@
         ),
         184: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     182,
                 ],
                 input: Value(-1.0),
@@ -3173,7 +3173,7 @@
         ),
         185: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     182,
                 ],
                 input: Value(-0.125),
@@ -3187,7 +3187,7 @@
         ),
         186: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     182,
                 ],
                 input: Value(1.0),
@@ -3201,7 +3201,7 @@
         ),
         187: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     182,
                 ],
                 input: Value(0.0),
@@ -3215,7 +3215,7 @@
         ),
         188: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     182,
                 ],
                 input: Value(2.0),
@@ -3234,7 +3234,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     196,
                 ],
                 source_ty: Perlin,
@@ -3253,7 +3253,7 @@
         ),
         190: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     196,
                 ],
                 input: Value(-1.0),
@@ -3267,7 +3267,7 @@
         ),
         191: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     196,
                 ],
                 input: Value(-0.125),
@@ -3281,7 +3281,7 @@
         ),
         192: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     196,
                 ],
                 input: Value(0.0),
@@ -3295,7 +3295,7 @@
         ),
         193: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     196,
                 ],
                 input: Value(1.0),
@@ -3309,7 +3309,7 @@
         ),
         194: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     196,
                 ],
                 input: Value(2.0),
@@ -3323,7 +3323,7 @@
         ),
         195: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     196,
                 ],
                 input: Value(-2.0),
@@ -3342,11 +3342,11 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(189),
-                output_node_indices: [
+                input_node_id: Some(189),
+                output_node_ids: [
                     197,
                 ],
-                control_point_node_indices: [
+                control_point_node_ids: [
                     Some(195),
                     Some(190),
                     Some(191),
@@ -3368,8 +3368,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(196), Some(182)),
-                output_node_indices: [
+                input_node_ids: (Some(196), Some(182)),
+                output_node_ids: [
                     199,
                 ],
             )),
@@ -3382,7 +3382,7 @@
         198: (
             value: U32Operation((
                 inputs: (Node(2), Value(102)),
-                output_node_indices: [
+                output_node_ids: [
                     199,
                 ],
                 op_ty: Add,
@@ -3400,8 +3400,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(197),
-                output_node_indices: [
+                input_node_id: Some(197),
+                output_node_ids: [
                     278,
                 ],
                 source_ty: Perlin,
@@ -3419,7 +3419,7 @@
         200: (
             value: F64((
                 name: "one",
-                output_node_indices: [
+                output_node_ids: [
                     201,
                 ],
                 value: 1.0,
@@ -3433,7 +3433,7 @@
         201: (
             value: F64Operation((
                 inputs: (Node(200), Value(57.25)),
-                output_node_indices: [
+                output_node_ids: [
                     199,
                 ],
                 op_ty: Divide,
@@ -3451,8 +3451,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(108),
-                output_node_indices: [
+                input_node_id: Some(108),
+                output_node_ids: [
                     207,
                 ],
                 scale: Value(0.125),
@@ -3467,7 +3467,7 @@
         203: (
             value: U32Operation((
                 inputs: (Node(2), Value(110)),
-                output_node_indices: [
+                output_node_ids: [
                     204,
                 ],
                 op_ty: Add,
@@ -3485,7 +3485,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     205,
                 ],
                 source_ty: Perlin,
@@ -3508,8 +3508,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(204),
-                output_node_indices: [
+                input_node_id: Some(204),
+                output_node_ids: [
                     206,
                 ],
                 exponent: Value(1.25),
@@ -3527,8 +3527,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(205),
-                output_node_indices: [
+                input_node_id: Some(205),
+                output_node_ids: [
                     207,
                 ],
                 scale: Value(0.25),
@@ -3547,8 +3547,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(202), Some(206)),
-                output_node_indices: [
+                input_node_ids: (Some(202), Some(206)),
+                output_node_ids: [
                     256,
                 ],
             )),
@@ -3561,7 +3561,7 @@
         208: (
             value: U32((
                 name: "_HillyTerrain",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -3573,7 +3573,7 @@
         209: (
             value: U32((
                 name: "_ScaledMountainousTerrain",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -3589,8 +3589,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(130),
-                output_node_indices: [
+                input_node_id: Some(130),
+                output_node_ids: [
                     215,
                 ],
                 scale: Value(0.0625),
@@ -3605,7 +3605,7 @@
         211: (
             value: U32Operation((
                 inputs: (Node(2), Value(120)),
-                output_node_indices: [
+                output_node_ids: [
                     212,
                 ],
                 op_ty: Add,
@@ -3623,7 +3623,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     213,
                 ],
                 source_ty: Perlin,
@@ -3646,8 +3646,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(212),
-                output_node_indices: [
+                input_node_id: Some(212),
+                output_node_ids: [
                     214,
                 ],
                 exponent: Value(1.25),
@@ -3665,8 +3665,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(213),
-                output_node_indices: [
+                input_node_id: Some(213),
+                output_node_ids: [
                     215,
                 ],
                 scale: Value(0.5),
@@ -3685,8 +3685,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(210), Some(214)),
-                output_node_indices: [
+                input_node_ids: (Some(210), Some(214)),
+                output_node_ids: [
                     247,
                 ],
             )),
@@ -3699,7 +3699,7 @@
         216: (
             value: U32((
                 name: "_ScaledHillyTerrain",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -3711,7 +3711,7 @@
         217: (
             value: U32((
                 name: "_PlainsTerrain",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -3727,8 +3727,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(139),
-                output_node_indices: [
+                input_node_id: Some(139),
+                output_node_ids: [
                     245,
                 ],
                 scale: Node(219),
@@ -3743,7 +3743,7 @@
         219: (
             value: F64Operation((
                 inputs: (Value(39.06), Value(10000.0)),
-                output_node_indices: [
+                output_node_ids: [
                     218,
                 ],
                 op_ty: Divide,
@@ -3757,7 +3757,7 @@
         220: (
             value: U32((
                 name: "_ScaledPlainsTerrain",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -3769,7 +3769,7 @@
         221: (
             value: F64Operation((
                 inputs: (Value(78.12), Value(10000.0)),
-                output_node_indices: [
+                output_node_ids: [
                     218,
                 ],
                 op_ty: Divide,
@@ -3783,7 +3783,7 @@
         222: (
             value: U32((
                 name: "_BadlandsTerrain",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -3799,8 +3799,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(178),
-                output_node_indices: [
+                input_node_id: Some(178),
+                output_node_ids: [
                     270,
                 ],
                 scale: Value(0.0625),
@@ -3815,7 +3815,7 @@
         224: (
             value: U32((
                 name: "_ScaledBadlandsTerrain",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -3827,7 +3827,7 @@
         225: (
             value: U32((
                 name: "_TerrainTypeDef",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -3839,7 +3839,7 @@
         226: (
             value: U32((
                 name: "_ContinentDef",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -3855,12 +3855,12 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(54),
-                output_node_indices: [
+                input_node_id: Some(54),
+                output_node_ids: [
                     231,
                 ],
                 inverted: false,
-                control_point_node_indices: [
+                control_point_node_ids: [
                     Some(228),
                     Some(229),
                     Some(66),
@@ -3876,7 +3876,7 @@
         228: (
             value: F64((
                 name: "name",
-                output_node_indices: [
+                output_node_ids: [
                     227,
                 ],
                 value: -1.0,
@@ -3890,7 +3890,7 @@
         229: (
             value: F64((
                 name: "name",
-                output_node_indices: [
+                output_node_ids: [
                     227,
                 ],
                 value: -0.75,
@@ -3904,7 +3904,7 @@
         230: (
             value: F64((
                 name: "name",
-                output_node_indices: [
+                output_node_ids: [
                     227,
                 ],
                 value: 1.0,
@@ -3922,8 +3922,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(227),
-                output_node_indices: [
+                input_node_id: Some(227),
+                output_node_ids: [
                     236,
                 ],
                 lower_bound: Value(0.75),
@@ -3938,7 +3938,7 @@
         232: (
             value: U32Operation((
                 inputs: (Node(2), Value(130)),
-                output_node_indices: [
+                output_node_ids: [
                     234,
                 ],
                 op_ty: Add,
@@ -3952,7 +3952,7 @@
         233: (
             value: F64Operation((
                 inputs: (Node(3), Value(4.375)),
-                output_node_indices: [
+                output_node_ids: [
                     234,
                 ],
                 op_ty: Multiply,
@@ -3970,7 +3970,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     235,
                 ],
                 source_ty: Perlin,
@@ -3994,8 +3994,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(234),
-                output_node_indices: [
+                input_node_id: Some(234),
+                output_node_ids: [
                     236,
                 ],
                 scale: Value(-0.125),
@@ -4014,8 +4014,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(235), Some(231)),
-                output_node_indices: [
+                input_node_ids: (Some(235), Some(231)),
+                output_node_ids: [
                     242,
                 ],
             )),
@@ -4028,7 +4028,7 @@
         237: (
             value: U32((
                 name: "_ContinentalShelf",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -4044,8 +4044,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(54),
-                output_node_indices: [
+                input_node_id: Some(54),
+                output_node_ids: [
                     242,
                 ],
                 scale: Node(240),
@@ -4060,7 +4060,7 @@
         239: (
             value: F64Operation((
                 inputs: (Value(0.0), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     240,
                 ],
                 op_ty: Subtract,
@@ -4074,7 +4074,7 @@
         240: (
             value: F64Operation((
                 inputs: (Node(239), Value(4.0)),
-                output_node_indices: [
+                output_node_ids: [
                     238,
                     285,
                     284,
@@ -4090,7 +4090,7 @@
         241: (
             value: U32((
                 name: "_ContinentHeightScale",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -4106,9 +4106,9 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(238), Some(236)),
-                control_node_idx: Some(54),
-                output_node_indices: [
+                input_node_ids: (Some(238), Some(236)),
+                control_node_id: Some(54),
+                output_node_ids: [
                     270,
                     247,
                     245,
@@ -4127,7 +4127,7 @@
         243: (
             value: F64Operation((
                 inputs: (Node(66), Value(1000.0)),
-                output_node_indices: [
+                output_node_ids: [
                     242,
                 ],
                 op_ty: Subtract,
@@ -4141,7 +4141,7 @@
         244: (
             value: U32((
                 name: "_BaseContinentElev",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -4157,8 +4157,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(242), Some(218)),
-                output_node_indices: [
+                input_node_ids: (Some(242), Some(218)),
+                output_node_ids: [
                     248,
                 ],
             )),
@@ -4171,7 +4171,7 @@
         246: (
             value: U32((
                 name: "_ContinentWithPlains",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -4187,8 +4187,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(242), Some(215)),
-                output_node_indices: [
+                input_node_ids: (Some(242), Some(215)),
+                output_node_ids: [
                     248,
                 ],
             )),
@@ -4205,9 +4205,9 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(245), Some(247)),
-                control_node_idx: Some(63),
-                output_node_indices: [
+                input_node_ids: (Some(245), Some(247)),
+                control_node_id: Some(63),
+                output_node_ids: [
                     264,
                 ],
                 lower_bound: Node(253),
@@ -4223,7 +4223,7 @@
         249: (
             value: F64((
                 name: "MountainsAmount",
-                output_node_indices: [
+                output_node_ids: [
                     265,
                     250,
                     266,
@@ -4240,7 +4240,7 @@
         250: (
             value: F64Operation((
                 inputs: (Value(1.0), Node(249)),
-                output_node_indices: [
+                output_node_ids: [
                     251,
                 ],
                 op_ty: Add,
@@ -4254,7 +4254,7 @@
         251: (
             value: F64Operation((
                 inputs: (Node(250), Value(2.0)),
-                output_node_indices: [
+                output_node_ids: [
                     254,
                     253,
                 ],
@@ -4269,7 +4269,7 @@
         252: (
             value: U32((
                 name: "_HillsAmount",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -4281,7 +4281,7 @@
         253: (
             value: F64Operation((
                 inputs: (Value(1.0), Node(251)),
-                output_node_indices: [
+                output_node_ids: [
                     248,
                 ],
                 op_ty: Subtract,
@@ -4295,7 +4295,7 @@
         254: (
             value: F64Operation((
                 inputs: (Value(1001.0), Node(251)),
-                output_node_indices: [
+                output_node_ids: [
                     248,
                 ],
                 op_ty: Subtract,
@@ -4309,7 +4309,7 @@
         255: (
             value: U32((
                 name: "_ContinentsWithHills",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -4325,8 +4325,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(242), Some(207)),
-                output_node_indices: [
+                input_node_ids: (Some(242), Some(207)),
+                output_node_ids: [
                     263,
                     257,
                 ],
@@ -4344,11 +4344,11 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(256),
-                output_node_indices: [
+                input_node_id: Some(256),
+                output_node_ids: [
                     263,
                 ],
-                control_point_node_indices: [
+                control_point_node_ids: [
                     Some(258),
                     Some(259),
                     Some(261),
@@ -4363,7 +4363,7 @@
         ),
         258: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     257,
                 ],
                 input: Value(-1.0),
@@ -4377,7 +4377,7 @@
         ),
         259: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     257,
                 ],
                 input: Value(0.0),
@@ -4391,7 +4391,7 @@
         ),
         260: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     257,
                 ],
                 input: Value(1.0),
@@ -4405,7 +4405,7 @@
         ),
         261: (
             value: ControlPoint((
-                output_node_indices: [
+                output_node_ids: [
                     257,
                 ],
                 input: Node(262),
@@ -4420,7 +4420,7 @@
         262: (
             value: F64Operation((
                 inputs: (Value(1.0), Node(249)),
-                output_node_indices: [
+                output_node_ids: [
                     261,
                 ],
                 op_ty: Subtract,
@@ -4438,8 +4438,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(256), Some(257)),
-                output_node_indices: [
+                input_node_ids: (Some(256), Some(257)),
+                output_node_ids: [
                     264,
                 ],
             )),
@@ -4456,9 +4456,9 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(248), Some(263)),
-                control_node_idx: Some(63),
-                output_node_indices: [
+                input_node_ids: (Some(248), Some(263)),
+                control_node_id: Some(63),
+                output_node_ids: [
                     275,
                     271,
                 ],
@@ -4475,7 +4475,7 @@
         265: (
             value: F64Operation((
                 inputs: (Value(1001.0), Node(249)),
-                output_node_indices: [
+                output_node_ids: [
                     264,
                 ],
                 op_ty: Subtract,
@@ -4489,7 +4489,7 @@
         266: (
             value: F64Operation((
                 inputs: (Value(1.0), Node(249)),
-                output_node_indices: [
+                output_node_ids: [
                     264,
                 ],
                 op_ty: Subtract,
@@ -4503,7 +4503,7 @@
         267: (
             value: U32((
                 name: "_ContinentsWithMountains",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -4515,7 +4515,7 @@
         268: (
             value: U32Operation((
                 inputs: (Node(2), Value(140)),
-                output_node_indices: [
+                output_node_ids: [
                     269,
                 ],
                 op_ty: Add,
@@ -4533,7 +4533,7 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                output_node_indices: [
+                output_node_ids: [
                     271,
                 ],
                 source_ty: Perlin,
@@ -4556,8 +4556,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(242), Some(223)),
-                output_node_indices: [
+                input_node_ids: (Some(242), Some(223)),
+                output_node_ids: [
                     271,
                 ],
             )),
@@ -4574,9 +4574,9 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(264), Some(270)),
-                control_node_idx: Some(269),
-                output_node_indices: [
+                input_node_ids: (Some(264), Some(270)),
+                control_node_id: Some(269),
+                output_node_ids: [
                     275,
                 ],
                 lower_bound: Node(273),
@@ -4592,7 +4592,7 @@
         272: (
             value: F64((
                 name: "BadlandsAmount",
-                output_node_indices: [
+                output_node_ids: [
                     274,
                     273,
                 ],
@@ -4607,7 +4607,7 @@
         273: (
             value: F64Operation((
                 inputs: (Value(1.0), Node(272)),
-                output_node_indices: [
+                output_node_ids: [
                     271,
                 ],
                 op_ty: Subtract,
@@ -4621,7 +4621,7 @@
         274: (
             value: F64Operation((
                 inputs: (Value(1001.0), Node(272)),
-                output_node_indices: [
+                output_node_ids: [
                     271,
                 ],
                 op_ty: Subtract,
@@ -4639,8 +4639,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(271), Some(264)),
-                output_node_indices: [
+                input_node_ids: (Some(271), Some(264)),
+                output_node_ids: [
                     283,
                     282,
                 ],
@@ -4654,7 +4654,7 @@
         276: (
             value: U32((
                 name: "_ContinentsWithBadlands",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -4666,7 +4666,7 @@
         277: (
             value: U32((
                 name: "_RiverPositions",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
@@ -4682,8 +4682,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_idx: Some(199),
-                output_node_indices: [
+                input_node_id: Some(199),
+                output_node_ids: [
                     282,
                 ],
                 scale: Node(280),
@@ -4698,7 +4698,7 @@
         279: (
             value: F64((
                 name: "RiverDepth",
-                output_node_indices: [
+                output_node_ids: [
                     280,
                 ],
                 value: 0.0234,
@@ -4712,7 +4712,7 @@
         280: (
             value: F64Operation((
                 inputs: (Node(279), Value(2.0)),
-                output_node_indices: [
+                output_node_ids: [
                     281,
                     278,
                 ],
@@ -4727,7 +4727,7 @@
         281: (
             value: F64Operation((
                 inputs: (Node(280), Value(-1.0)),
-                output_node_indices: [
+                output_node_ids: [
                     278,
                 ],
                 op_ty: Multiply,
@@ -4745,8 +4745,8 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(278), Some(275)),
-                output_node_indices: [
+                input_node_ids: (Some(278), Some(275)),
+                output_node_ids: [
                     283,
                 ],
             )),
@@ -4763,9 +4763,9 @@
                     x: 0.0,
                     y: 0.0,
                 ),
-                input_node_indices: (Some(275), Some(282)),
-                control_node_idx: Some(275),
-                output_node_indices: [],
+                input_node_ids: (Some(275), Some(282)),
+                control_node_id: Some(275),
+                output_node_ids: [],
                 lower_bound: Node(6),
                 upper_bound: Node(284),
                 falloff: Node(285),
@@ -4779,7 +4779,7 @@
         284: (
             value: F64Operation((
                 inputs: (Node(240), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     283,
                 ],
                 op_ty: Add,
@@ -4793,7 +4793,7 @@
         285: (
             value: F64Operation((
                 inputs: (Node(240), Node(6)),
-                output_node_indices: [
+                output_node_ids: [
                     283,
                 ],
                 op_ty: Subtract,
@@ -4807,7 +4807,7 @@
         286: (
             value: U32((
                 name: "_UnscaledFinalPlanet",
-                output_node_indices: [],
+                output_node_ids: [],
                 value: 0,
             )),
             pos: (
