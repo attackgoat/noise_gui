@@ -2027,6 +2027,7 @@ dependencies = [
  "ron",
  "serde",
  "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]

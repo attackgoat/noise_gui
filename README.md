@@ -30,6 +30,8 @@ A graphical user interface for [Noise-rs](https://github.com/Razaekel/noise-rs).
 
 > [!WARNING]
 > `noise_gui` is currently in the proof-of-concept phase and may contain bugs and missing features.
+> The examples are not currently working and need to be updated because of the latest changes to
+> the serialization format.
 
 ## Development Dependencies
 

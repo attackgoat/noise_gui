@@ -17,16 +17,16 @@
     <link data-trunk rel="icon" href="assets/favicon.ico">
 
 
-    <link data-trunk rel="copy-file" href="assets/sw.js" />
-    <link data-trunk rel="copy-file" href="assets/manifest.json" />
-    <link data-trunk rel="copy-file" href="assets/icon-1024.png" />
-    <link data-trunk rel="copy-file" href="assets/icon-256.png" />
-    <link data-trunk rel="copy-file" href="assets/icon_ios_touch_192.png" />
-    <link data-trunk rel="copy-file" href="assets/maskable_icon_x512.png" />
+    <link data-trunk rel="copy-file" href="assets/sw.js"/>
+    <link data-trunk rel="copy-file" href="assets/manifest.json"/>
+    <link data-trunk rel="copy-file" href="assets/icon-1024.png" data-target-path="assets"/>
+    <link data-trunk rel="copy-file" href="assets/icon-256.png" data-target-path="assets"/>
+    <link data-trunk rel="copy-file" href="assets/icon_ios_touch_192.png" data-target-path="assets"/>
+    <link data-trunk rel="copy-file" href="assets/maskable_icon_x512.png" data-target-path="assets"/>
 
 
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon_ios_touch_192.png">
+    <link rel="apple-touch-icon" href="assets/icon_ios_touch_192.png">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="white">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#404040">
 
@@ -60,15 +60,16 @@
             width: 100%;
         }
 
-        /* Position canvas in center-top: */
+        /* Make canvas fill entire document: */
         canvas {
             margin-right: auto;
             margin-left: auto;
             display: block;
             position: absolute;
-            top: 0%;
-            left: 50%;
-            transform: translate(-50%, 0%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
 
         .centered {
@@ -114,7 +115,6 @@
                 transform: rotate(360deg);
             }
         }
-
     </style>
 </head>
 
@@ -122,6 +122,14 @@
     <!-- The WASM code will resize the canvas dynamically -->
     <!-- the id is hardcoded in main.rs . so, make sure both match. -->
     <canvas id="the_canvas_id"></canvas>
+
+    <!-- the loading spinner will be removed in main.rs -->
+    <div class="centered" id="loading_text">
+        <p style="font-size:16px">
+            Loading…
+        </p>
+        <div class="lds-dual-ring"></div>
+    </div>
 
     <!--Register Service Worker. this will cache the wasm / js scripts for offline use (for PWA functionality). -->
     <!-- Force refresh (Ctrl + F5) to load the latest files instead of cached files  -->
