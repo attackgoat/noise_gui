@@ -3160,4 +3160,8 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             ui.close_menu();
         }
     }
+
+    fn has_node_menu(&mut self, _node: &NoiseNode) -> bool {
+        true
+    }
 }
