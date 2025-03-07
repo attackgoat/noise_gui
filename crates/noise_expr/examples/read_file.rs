@@ -1,4 +1,4 @@
-use noise_gui::Expr;
+use noise_expr::Expr;
 
 fn main() {
     let mut test_expr: Expr = ron::from_str(include_str!("test.ron")).unwrap();

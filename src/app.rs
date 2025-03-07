@@ -1,6 +1,5 @@
 use {
     super::{
-        expr::Expr,
         node::{Image, NoiseNode},
         rand::shuffled_u8,
         thread::{ImageInfo, Threads},
@@ -16,6 +15,7 @@ use {
         NodeId, OutPinId, Snarl,
     },
     log::debug,
+    noise_expr::Expr,
     std::{
         cell::RefCell,
         collections::{HashMap, HashSet},

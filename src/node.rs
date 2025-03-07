@@ -1,14 +1,14 @@
 use {
-    super::expr::{
-        BlendExpr, ClampExpr, ControlPointExpr, CurveExpr, DisplaceExpr, DistanceFunction,
-        ExponentExpr, Expr, FractalExpr, OpType, ReturnType, RigidFractalExpr, ScaleBiasExpr,
-        SelectExpr, SourceType, TerraceExpr, TransformExpr, TurbulenceExpr, Variable, WorleyExpr,
-    },
     egui::TextureHandle,
     egui_snarl::{InPinId, NodeId, OutPinId, Snarl},
     noise::{
         BasicMulti as Fractal, Cylinders, Perlin as AnySeedable, RidgedMulti as RigidFractal,
         Turbulence, Worley,
+    },
+    noise_expr::{
+        BlendExpr, ClampExpr, ControlPointExpr, CurveExpr, DisplaceExpr, DistanceFunction,
+        ExponentExpr, Expr, FractalExpr, OpType, ReturnType, RigidFractalExpr, ScaleBiasExpr,
+        SelectExpr, SourceType, TerraceExpr, TransformExpr, TurbulenceExpr, Variable, WorleyExpr,
     },
     serde::{Deserialize, Serialize},
     std::{cell::RefCell, collections::HashSet},
@@ -1159,12 +1159,6 @@ impl Default for SelectNode {
             upper_bound: NodeValue::Value(1.0),
             falloff: NodeValue::Value(0.0),
         }
-    }
-}
-
-impl Default for SourceType {
-    fn default() -> Self {
-        Self::Perlin
     }
 }
 

@@ -695,9 +695,10 @@ impl SelectExpr {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub enum SourceType {
     OpenSimplex,
+    #[default]
     Perlin,
     PerlinSurflet,
     Simplex,

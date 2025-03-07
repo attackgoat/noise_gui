@@ -6,7 +6,6 @@ mod rand {
 }
 
 mod app;
-mod expr;
 mod node;
 mod thread;
 mod view;
