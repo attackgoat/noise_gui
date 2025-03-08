@@ -1,7 +1,8 @@
 use {
-    super::{app::NodeExprs, expr::Expr},
+    super::app::NodeExprs,
     crossbeam_channel::{unbounded, Receiver, Sender},
     egui_snarl::NodeId,
+    noise_expr::Expr,
     std::{
         collections::HashMap,
         sync::{Arc, RwLock},

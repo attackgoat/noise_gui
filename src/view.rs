@@ -1,13 +1,10 @@
 use {
-    super::{
-        expr::{DistanceFunction, OpType, ReturnType, SourceType, MAX_FRACTAL_OCTAVES},
-        node::{
-            CheckerboardNode, ClampNode, ConstantOpNode, ControlPointNode, CylindersNode,
-            ExponentNode, FractalNode, GeneratorNode,
-            NodeValue::{Node, Value},
-            NoiseNode, RigidFractalNode, ScaleBiasNode, SelectNode, TransformNode, TurbulenceNode,
-            WorleyNode,
-        },
+    super::node::{
+        CheckerboardNode, ClampNode, ConstantOpNode, ControlPointNode, CylindersNode, ExponentNode,
+        FractalNode, GeneratorNode,
+        NodeValue::{Node, Value},
+        NoiseNode, RigidFractalNode, ScaleBiasNode, SelectNode, TransformNode, TurbulenceNode,
+        WorleyNode,
     },
     egui::{Align, Color32, ComboBox, DragValue, Layout, Pos2, Stroke, TextEdit, TextWrapMode, Ui},
     egui_snarl::{
@@ -15,6 +12,7 @@ use {
         InPin, NodeId, OutPin, OutPinId, Snarl,
     },
     log::debug,
+    noise_expr::{DistanceFunction, OpType, ReturnType, SourceType, MAX_FRACTAL_OCTAVES},
     std::{cell::RefCell, collections::HashSet},
 };
 

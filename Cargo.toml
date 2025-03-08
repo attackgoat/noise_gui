@@ -4,18 +4,32 @@ version = "0.1.0"
 authors = ["John Wells <john@attackgoat.com>"]
 edition = "2021"
 
+[workspace]
+members = ["crates/*"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+noise = "0.8"
+
+[profile.release]
+opt-level = 2 # fast and small wasm
+
+# Optimize all dependencies even in debug builds:
+[profile.dev.package."*"]
+opt-level = 2
+
 [dependencies]
 crossbeam-channel = "0.5"
 eframe = { version = "0.30", features = [
     "serde",
     "persistence",
-] }
+]}
 egui = "0.30"
 egui-snarl = { git = "https://github.com/zakarumych/egui-snarl", features = ["serde"], rev = "b17ce7513987729f1ebe62ed03ca60bd74dcbac2" }
 log = "0.4"
-noise = "0.8"
-ordered-float = "4.2"
-serde = { version = "1", features = ["derive"] }
+noise_expr={path="./crates/noise_expr"}
+serde = {workspace = true}
+noise={workspace = true}
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 anyhow = "1.0"
@@ -31,10 +45,3 @@ web-sys = "0.3"
 anyhow = "1.0"
 lazy_static = "1.4"
 rand = "0.8"
-
-[profile.release]
-opt-level = 2 # fast and small wasm
-
-# Optimize all dependencies even in debug builds:
-[profile.dev.package."*"]
-opt-level = 2
