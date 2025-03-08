@@ -65,6 +65,8 @@ trunk serve --open
 Completed noise graphs may be exported (_right-click on any node_). The output file is `.ron` format
 and may be deserialized for use in your programs.
 
+_See [`noise_expr`](crates/noise_expr/README.md)_
+
 Once deserialized into an `Expr` instance you may replace any decimal or integer values using their
 name and the `Expr::set_f64` and `Expr::set_u32` functions. Note that node names do not have to be
 unique and that all nodes sharing the provided name will be updated. The `Expr::noise` function may
@@ -73,5 +75,5 @@ be used to retrieve a Noise-rs `NoiseFn` implementation.
 See the example for more details:
 
 ```bash
-cargo run --example read_file
+cargo run --example read_file --package noise_expr
 ```
