@@ -29,9 +29,9 @@ eframe = { version = "0.31", features = [
 egui = "0.31"
 egui-snarl = { version = "0.7", features = ["serde"] }
 log = "0.4"
-noise_expr={path="./crates/noise_expr"}
-serde = {workspace = true}
-noise={workspace = true}
+noise_expr = { version = "0.1", path="./crates/noise_expr" }
+serde = { workspace = true }
+noise = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 anyhow = "1.0"
