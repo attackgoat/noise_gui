@@ -3,6 +3,8 @@ name = "noise_expr"
 version = "0.1.0"
 authors = ["John Wells <john@attackgoat.com>"]
 edition = "2021"
+description = "A graph serialization library for noise_gui"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 noise = {workspace = true}

@@ -3,6 +3,8 @@ name = "noise_gui"
 version = "0.1.0"
 authors = ["John Wells <john@attackgoat.com>"]
 edition = "2021"
+description = "A graphical user interface for Noise-rs"
+license = "MIT OR Apache-2.0"
 
 [workspace]
 members = ["crates/*"]
