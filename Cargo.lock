@@ -2030,17 +2030,12 @@ dependencies = [
 
 [[package]]
 name = "noise_expr"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
- "anyhow",
- "env_logger",
  "noise",
  "ordered-float",
- "rfd",
  "ron",
  "serde",
- "wasm-bindgen-futures",
- "web-sys",
 ]
 
 [[package]]
