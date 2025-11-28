@@ -8,7 +8,7 @@ use {
     },
     egui::{Align, Color32, ComboBox, DragValue, Layout, Pos2, Stroke, TextEdit, TextWrapMode, Ui},
     egui_snarl::{
-        ui::{PinInfo, PinShape, SnarlViewer},
+        ui::{PinInfo, PinShape, SnarlPin, SnarlViewer},
         InPin, NodeId, OutPin, OutPinId, Snarl,
     },
     log::debug,
@@ -1110,7 +1110,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         ui: &mut Ui,
         scale: f32,
         snarl: &mut Snarl<NoiseNode>,
-    ) -> PinInfo {
+    ) -> impl SnarlPin + 'static {
         // TODO: This comment is inaccurate and the code should be moved to disconnect
         // and drop_inputs/drop_outputs
         // Handle disconnections by resetting node pins to the value of the previous node
@@ -2425,7 +2425,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         ui: &mut Ui,
         scale: f32,
         snarl: &mut Snarl<NoiseNode>,
-    ) -> PinInfo {
+    ) -> impl SnarlPin + 'static {
         let node = snarl.get_node(pin.id.node).unwrap();
 
         if let Some(texture) = node.image().and_then(|image| image.texture.as_ref()) {
