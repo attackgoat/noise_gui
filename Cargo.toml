@@ -36,7 +36,7 @@ noise = { workspace = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 anyhow = "1.0"
 env_logger = "0.11"
-rfd = "0.12"
+rfd = "0.16"
 ron = "0.8"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
