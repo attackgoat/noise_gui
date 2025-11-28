@@ -46,4 +46,4 @@ web-sys = "0.3"
 [build-dependencies]
 anyhow = "1.0"
 lazy_static = "1.4"
-rand = "0.8"
+rand = "0.9"

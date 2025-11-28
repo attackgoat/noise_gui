@@ -1,7 +1,7 @@
 use {
     anyhow::Context,
     lazy_static::lazy_static,
-    rand::{seq::SliceRandom, thread_rng},
+    rand::{rng, seq::SliceRandom},
     std::{
         any::type_name, env::var, error::Error, fmt::Display, fs::File, io::Write, path::PathBuf,
     },
@@ -58,7 +58,7 @@ where
             .with_context(|| format!("Converting {idx} to {}", type_name::<T>()))?;
     }
 
-    res.shuffle(&mut thread_rng());
+    res.shuffle(&mut rng());
 
     Ok(res)
 }
