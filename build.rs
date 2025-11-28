@@ -52,8 +52,8 @@ where
 {
     let mut res = [Default::default(); N];
 
-    for idx in 0..res.len() {
-        res[idx] = idx
+    for (idx, item) in res.iter_mut().enumerate() {
+        *item = idx
             .try_into()
             .with_context(|| format!("Converting {idx} to {}", type_name::<T>()))?;
     }

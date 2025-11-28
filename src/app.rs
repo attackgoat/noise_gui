@@ -105,16 +105,17 @@ impl App {
 
     #[cfg(not(target_arch = "wasm32"))]
     fn open(path: impl AsRef<Path>) -> anyhow::Result<Snarl<NoiseNode>> {
-        Ok(
-            from_reader(OpenOptions::new().read(true).open(path).map_err(|err| {
-                warn!("Unable to open file");
-                err
-            })?)
-            .map_err(|err: ron::error::SpannedError| {
-                warn!("Unable to read file");
-                err
-            })?,
+        Ok(from_reader(
+            OpenOptions::new()
+                .read(true)
+                .open(path)
+                .inspect_err(|err| {
+                    warn!("Unable to open file: {err}");
+                })?,
         )
+        .inspect_err(|err| {
+            warn!("Unable to read file: {err}");
+        })?)
     }
 
     fn remove_nodes(&mut self) {
@@ -146,14 +147,12 @@ impl App {
             .create(true)
             .truncate(true)
             .open(path)
-            .map_err(|err| {
-                warn!("Unable to create file");
-                err
+            .inspect_err(|err| {
+                warn!("Unable to create file: {err}");
             })?
             .write_all(to_string_pretty(value, PrettyConfig::default())?.as_bytes())
-            .map_err(|err| {
-                warn!("Unable to write file");
-                err
+            .inspect_err(|err| {
+                warn!("Unable to write file: {err}");
             })?;
 
         Ok(())
