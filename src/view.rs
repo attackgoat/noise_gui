@@ -73,11 +73,11 @@ impl<'a> Viewer<'a> {
             });
     }
 
-    fn drag_value_f64(&mut self, ui: &mut Ui, scale: f32, value: &mut f64, node_id: NodeId) {
+    fn drag_value_f64(&mut self, ui: &mut Ui, value: &mut f64, node_id: NodeId) {
         ui.with_layout(
             Layout::right_to_left(Align::Min).with_cross_align(Align::Center),
             |ui| {
-                ui.set_height(16.0 * scale);
+                ui.set_height(16.0);
                 if ui
                     .add(
                         DragValue::new(value)
@@ -93,11 +93,11 @@ impl<'a> Viewer<'a> {
         );
     }
 
-    fn drag_value_octaves(&mut self, ui: &mut Ui, scale: f32, value: &mut u32, node_id: NodeId) {
+    fn drag_value_octaves(&mut self, ui: &mut Ui, value: &mut u32, node_id: NodeId) {
         ui.with_layout(
             Layout::right_to_left(Align::Min).with_cross_align(Align::Center),
             |ui| {
-                ui.set_height(16.0 * scale);
+                ui.set_height(16.0);
                 if ui
                     .add(DragValue::new(value).range(1..=MAX_FRACTAL_OCTAVES))
                     .changed()
@@ -108,11 +108,11 @@ impl<'a> Viewer<'a> {
         );
     }
 
-    fn drag_value_u32(&mut self, ui: &mut Ui, scale: f32, value: &mut u32, node_id: NodeId) {
+    fn drag_value_u32(&mut self, ui: &mut Ui, value: &mut u32, node_id: NodeId) {
         ui.with_layout(
             Layout::right_to_left(Align::Min).with_cross_align(Align::Center),
             |ui| {
-                ui.set_height(16.0 * scale);
+                ui.set_height(16.0);
                 if ui.add(DragValue::new(value)).changed() {
                     self.updated_node_ids.insert(node_id);
                 }
@@ -875,7 +875,6 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         _inputs: &[InPin],
         _outputs: &[OutPin],
         ui: &mut Ui,
-        scale: f32,
         snarl: &mut Snarl<NoiseNode>,
     ) {
         #[cfg(debug_assertions)]
@@ -883,12 +882,12 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
 
         let node = snarl.get_node_mut(node_id).unwrap();
 
-        ui.set_height(16.0 * scale);
-        ui.set_width(128.0 * scale);
+        ui.set_height(16.0);
+        ui.set_width(128.0);
         ui.with_layout(
             Layout::left_to_right(Align::Min).with_cross_align(Align::Center),
             |ui| {
-                ui.add_space(20.0 * scale);
+                ui.add_space(20.0);
                 match node {
                     NoiseNode::Abs(_) => {
                         ui.label("Abs");
@@ -934,7 +933,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     }
                     NoiseNode::F64(node) => {
                         ui.label("Decimal");
-                        ui.add(TextEdit::singleline(&mut node.name).desired_width(50.0 * scale));
+                        ui.add(TextEdit::singleline(&mut node.name).desired_width(50.0));
 
                         if ui
                             .add(
@@ -1031,7 +1030,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     }
                     NoiseNode::U32(node) => {
                         ui.label("Integer");
-                        ui.add(TextEdit::singleline(&mut node.name).desired_width(50.0 * scale));
+                        ui.add(TextEdit::singleline(&mut node.name).desired_width(50.0));
 
                         if ui.add(DragValue::new(&mut node.value)).changed() {
                             self.updated_node_ids.insert(node_id);
@@ -1108,7 +1107,6 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         &mut self,
         pin: &InPin,
         ui: &mut Ui,
-        scale: f32,
         snarl: &mut Snarl<NoiseNode>,
     ) -> impl SnarlPin + 'static {
         // TODO: This comment is inaccurate and the code should be moved to disconnect
@@ -1705,12 +1703,12 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             }
         }
 
-        ui.set_height(16.0 * scale);
-        ui.set_width(128.0 * scale);
+        ui.set_height(16.0);
+        ui.set_width(128.0);
         ui.with_layout(
             Layout::left_to_right(Align::Min).with_cross_align(Align::Center),
             |ui| {
-                ui.add_space(20.0 * scale);
+                ui.add_space(20.0);
                 match (pin.id.input, snarl.get_node_mut(pin.id.node).unwrap()) {
                     (
                         0,
@@ -1755,7 +1753,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Seed");
 
                         if let Some(value) = seed.as_value_mut() {
-                            self.drag_value_u32(ui, scale, value, pin.id.node);
+                            self.drag_value_u32(ui, value, pin.id.node);
 
                             Self::u32_pin_info(true, false)
                         } else {
@@ -1772,7 +1770,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Size");
 
                         if let Some(value) = size.as_value_mut() {
-                            self.drag_value_u32(ui, scale, value, pin.id.node);
+                            self.drag_value_u32(ui, value, pin.id.node);
 
                             Self::u32_pin_info(true, false)
                         } else {
@@ -1789,7 +1787,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Input");
 
                         if let Some(value) = node.input.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -1806,7 +1804,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Frequency");
 
                         if let Some(value) = node.frequency.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -1855,7 +1853,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Input");
 
                         if let Some(value) = node.inputs[pin.id.input].as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -1893,7 +1891,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Input");
 
                         if let Some(value) = node.inputs[pin.id.input].as_value_mut() {
-                            self.drag_value_u32(ui, scale, value, pin.id.node);
+                            self.drag_value_u32(ui, value, pin.id.node);
 
                             Self::u32_pin_info(true, false)
                         } else {
@@ -1913,7 +1911,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Output");
 
                         if let Some(value) = node.output.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -1937,7 +1935,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Octaves");
 
                         if let Some(value) = octaves.as_value_mut() {
-                            self.drag_value_octaves(ui, scale, value, pin.id.node);
+                            self.drag_value_octaves(ui, value, pin.id.node);
 
                             Self::u32_pin_info(true, false)
                         } else {
@@ -1954,7 +1952,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Lower Bound");
 
                         if let Some(value) = node.lower_bound.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -1974,7 +1972,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Exponent");
 
                         if let Some(value) = node.exponent.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -1994,7 +1992,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Seed");
 
                         if let Some(value) = node.seed.as_value_mut() {
-                            self.drag_value_u32(ui, scale, value, pin.id.node);
+                            self.drag_value_u32(ui, value, pin.id.node);
 
                             Self::u32_pin_info(true, false)
                         } else {
@@ -2027,7 +2025,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label(Self::AXES[pin.id.input - 1]);
 
                         if let Some(value) = node.axes[pin.id.input - 1].as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2047,7 +2045,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Scale");
 
                         if let Some(value) = node.scale.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2064,7 +2062,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Frequency");
 
                         if let Some(value) = node.frequency.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2091,7 +2089,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Frequency");
 
                         if let Some(value) = frequency.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2119,7 +2117,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Upper Bound");
 
                         if let Some(value) = node.upper_bound.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2139,7 +2137,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Bias");
 
                         if let Some(value) = node.bias.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2156,7 +2154,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Frequency");
 
                         if let Some(value) = node.frequency.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2183,7 +2181,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Lacunarity");
 
                         if let Some(value) = lacunarity.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2200,7 +2198,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Lower Bound");
 
                         if let Some(value) = node.lower_bound.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2220,7 +2218,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Power");
 
                         if let Some(value) = node.power.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2244,7 +2242,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Persistence");
 
                         if let Some(value) = persistence.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2261,7 +2259,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Upper Bound");
 
                         if let Some(value) = node.upper_bound.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2281,7 +2279,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Roughness");
 
                         if let Some(value) = node.roughness.as_value_mut() {
-                            self.drag_value_u32(ui, scale, value, pin.id.node);
+                            self.drag_value_u32(ui, value, pin.id.node);
 
                             Self::u32_pin_info(true, false)
                         } else {
@@ -2301,7 +2299,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Attenuation");
 
                         if let Some(value) = node.attenuation.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2321,7 +2319,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         ui.label("Falloff");
 
                         if let Some(value) = node.falloff.as_value_mut() {
-                            self.drag_value_f64(ui, scale, value, pin.id.node);
+                            self.drag_value_f64(ui, value, pin.id.node);
 
                             Self::f64_pin_info(true, false)
                         } else {
@@ -2423,13 +2421,12 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         &mut self,
         pin: &OutPin,
         ui: &mut Ui,
-        scale: f32,
         snarl: &mut Snarl<NoiseNode>,
     ) -> impl SnarlPin + 'static {
         let node = snarl.get_node(pin.id.node).unwrap();
 
         if let Some(texture) = node.image().and_then(|image| image.texture.as_ref()) {
-            ui.image((texture.id(), texture.size_vec2() * scale));
+            ui.image((texture.id(), texture.size_vec2()));
         }
 
         match node {
@@ -2522,234 +2519,228 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         true
     }
 
-    fn show_graph_menu(
-        &mut self,
-        pos: Pos2,
-        ui: &mut Ui,
-        _scale: f32,
-        snarl: &mut Snarl<NoiseNode>,
-    ) {
+    fn show_graph_menu(&mut self, pos: Pos2, ui: &mut Ui, snarl: &mut Snarl<NoiseNode>) {
         ui.label("Add node");
 
         ui.menu_button("Combiners", |ui| {
             if ui.button("Add").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Add(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Min").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Min(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Max").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Max(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Multiply").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Multiply(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Power").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Power(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
         });
         ui.menu_button("Generators", |ui| {
             if ui.button("Checkerboard").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Checkerboard(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Cylinders").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Cylinders(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Open Simplex").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::OpenSimplex(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Perlin").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Perlin(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Perlin Surflet").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::PerlinSurflet(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Simplex").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Simplex(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Super Simplex").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::SuperSimplex(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Value").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Value(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Worley").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Worley(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
         });
         ui.menu_button("Fractals", |ui| {
             if ui.button("Basic Multi").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::BasicMulti(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Hybrid Multi").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::HybridMulti(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Rigid Multi").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::RigidMulti(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Billow").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Billow(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("fBm").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Fbm(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
         });
         ui.menu_button("Modifiers", |ui| {
             if ui.button("Abs").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Abs(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Clamp").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Clamp(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Curve").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Curve(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Exponent").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Exponent(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Negate").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Negate(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Scale + Bias").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::ScaleBias(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Terrace").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Terrace(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
         });
         ui.menu_button("Selectors", |ui| {
             if ui.button("Blend").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Blend(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Select").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Select(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
         });
         ui.menu_button("Transformers", |ui| {
             if ui.button("Displace").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Displace(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Rotate Point").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::RotatePoint(TransformNode::zero())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Scale Point").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::ScalePoint(TransformNode::one())));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Translate Point").clicked() {
                 self.updated_node_ids.insert(
                     snarl.insert_node(pos, NoiseNode::TranslatePoint(TransformNode::zero())),
                 );
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Turbulence").clicked() {
                 self.updated_node_ids
                     .insert(snarl.insert_node(pos, NoiseNode::Turbulence(Default::default())));
-                ui.close_menu();
+                ui.close();
             }
         });
         ui.menu_button("Constants", |ui| {
             if ui.button("Control Point").clicked() {
                 snarl.insert_node(pos, NoiseNode::ControlPoint(Default::default()));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Decimal").clicked() {
                 snarl.insert_node(pos, NoiseNode::F64(Default::default()));
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Integer").clicked() {
                 snarl.insert_node(pos, NoiseNode::U32(Default::default()));
-                ui.close_menu();
+                ui.close();
             }
 
             ui.separator();
@@ -2760,7 +2751,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     pos,
                     NoiseNode::Operation(ConstantOpNode::new(OpType::Add, ())),
                 );
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Divide").clicked() {
@@ -2768,7 +2759,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     pos,
                     NoiseNode::Operation(ConstantOpNode::new(OpType::Divide, ())),
                 );
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Multiply").clicked() {
@@ -2776,7 +2767,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     pos,
                     NoiseNode::Operation(ConstantOpNode::new(OpType::Multiply, ())),
                 );
-                ui.close_menu();
+                ui.close();
             }
 
             if ui.button("Subtract").clicked() {
@@ -2784,7 +2775,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     pos,
                     NoiseNode::Operation(ConstantOpNode::new(OpType::Subtract, ())),
                 );
-                ui.close_menu();
+                ui.close();
             }
         });
     }
@@ -2795,7 +2786,6 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
         inputs: &[InPin],
         outputs: &[OutPin],
         ui: &mut Ui,
-        _scale: f32,
         snarl: &mut Snarl<NoiseNode>,
     ) {
         ui.label("Node menu");
@@ -2817,7 +2807,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             App::save_as(path, &node.expr(node_id, snarl)).unwrap_or_default();
                         }
 
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     ui.separator();
@@ -3155,7 +3145,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             }
 
             snarl.remove_node(node_id);
-            ui.close_menu();
+            ui.close();
         }
     }
 

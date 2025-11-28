@@ -22,12 +22,12 @@ opt-level = 2
 
 [dependencies]
 crossbeam-channel = "0.5"
-eframe = { version = "0.31", features = [
+eframe = { version = "0.33", features = [
     "serde",
     "persistence",
 ]}
-egui = "0.31"
-egui-snarl = { version = "0.7", features = ["serde"] }
+egui = "0.33"
+egui-snarl = { version = "0.9", features = ["serde"] }
 log = "0.4"
 noise_expr = { version = "0.1", path="./crates/noise_expr" }
 serde = { workspace = true }

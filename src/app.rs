@@ -25,7 +25,7 @@ use {
 
 #[cfg(not(target_arch = "wasm32"))]
 use {
-    egui::{menu, widgets, TopBottomPanel, ViewportCommand},
+    egui::{widgets, TopBottomPanel, ViewportCommand},
     log::warn,
     rfd::FileDialog,
     ron::{
@@ -59,10 +59,8 @@ impl App {
     pub const EXTENSION: &'static str = "ron";
 
     const IMAGE_COUNT: usize = Threads::IMAGE_COORDS as usize * Threads::IMAGE_COORDS as usize;
-    const IMAGE_SIZE: [usize; 2] = [
-        Threads::IMAGE_SIZE * Threads::IMAGE_COORDS as usize,
-        Threads::IMAGE_SIZE * Threads::IMAGE_COORDS as usize,
-    ];
+    const IMAGE_DIM: usize = Threads::IMAGE_SIZE * Threads::IMAGE_COORDS as usize;
+    const IMAGE_SIZE: [usize; 2] = [Self::IMAGE_DIM, Self::IMAGE_DIM];
 
     pub fn new(#[allow(unused_variables)] cc: &CreationContext<'_>) -> Self {
         let snarl: Snarl<NoiseNode> = if let Some(storage) = cc.storage {
@@ -253,7 +251,10 @@ impl App {
 
                     image.texture = Some(ctx.load_texture(
                         format!("image{node_id:?}"),
-                        ColorImage::new(Self::IMAGE_SIZE, Color32::TRANSPARENT),
+                        ColorImage::new(
+                            Self::IMAGE_SIZE,
+                            vec![Color32::TRANSPARENT; Self::IMAGE_DIM.pow(2)],
+                        ),
                         Default::default(),
                     ));
                 }
@@ -327,13 +328,13 @@ impl eframe::App for App {
 
         #[cfg(not(target_arch = "wasm32"))]
         TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("New").clicked() {
                         self.path = None;
                         self.snarl = Snarl::new();
 
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     ui.separator();
@@ -345,14 +346,14 @@ impl eframe::App for App {
                             self.updated_node_ids = Self::all_image_node_ids(&self.snarl).collect();
                         }
 
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     if let Some(path) = &self.path {
                         if ui.button("Save").clicked() {
                             Self::save_as(path, &self.snarl).unwrap_or_default();
 
-                            ui.close_menu();
+                            ui.close();
                         }
                     } else {
                         ui.horizontal(|ui| {
@@ -367,7 +368,7 @@ impl eframe::App for App {
                             self.path = Some(path);
                         }
 
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     ui.separator();
