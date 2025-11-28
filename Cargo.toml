@@ -11,7 +11,7 @@ members = ["crates/*"]
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
-noise = "0.8"
+noise = "0.9"
 
 [profile.release]
 opt-level = 2 # fast and small wasm
