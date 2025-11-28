@@ -30,7 +30,7 @@ use {
     rfd::FileDialog,
     ron::{
         de::from_reader,
-        ser::{to_writer_pretty, PrettyConfig},
+        ser::{to_string_pretty, PrettyConfig},
     },
     serde::Serialize,
     std::{
@@ -135,13 +135,15 @@ impl App {
     where
         T: ?Sized + Serialize,
     {
+        use std::io::Write;
+
         let mut path = path.as_ref().to_path_buf();
 
         if path.extension().is_none() {
             path.set_extension(Self::EXTENSION);
         }
 
-        let file = OpenOptions::new()
+        OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
@@ -149,11 +151,12 @@ impl App {
             .map_err(|err| {
                 warn!("Unable to create file");
                 err
+            })?
+            .write_all(to_string_pretty(value, PrettyConfig::default())?.as_bytes())
+            .map_err(|err| {
+                warn!("Unable to write file");
+                err
             })?;
-        to_writer_pretty(file, value, PrettyConfig::default()).map_err(|err| {
-            warn!("Unable to write file");
-            err
-        })?;
 
         Ok(())
     }
