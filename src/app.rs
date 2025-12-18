@@ -104,7 +104,16 @@ impl App {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn open(path: impl AsRef<Path>) -> anyhow::Result<Snarl<NoiseNode>> {
+    pub fn open(&mut self, path: impl AsRef<Path>) {
+        let path = path.as_ref();
+
+        self.snarl = Self::read_file(path).unwrap_or_default();
+        self.path = Some(path.to_owned());
+        self.updated_node_ids = Self::all_image_node_ids(&self.snarl).collect();
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn read_file(path: impl AsRef<Path>) -> anyhow::Result<Snarl<NoiseNode>> {
         Ok(from_reader(
             OpenOptions::new()
                 .read(true)
@@ -340,9 +349,7 @@ impl eframe::App for App {
 
                     if ui.button("Open File...").clicked() {
                         if let Some(path) = Self::file_dialog().pick_file() {
-                            self.snarl = Self::open(&path).unwrap_or_default();
-                            self.path = Some(path);
-                            self.updated_node_ids = Self::all_image_node_ids(&self.snarl).collect();
+                            self.open(path);
                         }
 
                         ui.close();

@@ -12,11 +12,15 @@ mod view;
 
 use self::app::App;
 
+#[cfg(not(target_arch = "wasm32"))]
+use std::{env::args, path::PathBuf};
+
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
+    let path_arg = args().skip(1).next().map(PathBuf::from);
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([400.0, 300.0])
@@ -26,7 +30,14 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Noise Gen",
         native_options,
-        Box::new(|cc| Ok(Box::new(App::new(cc)))),
+        Box::new(|cc| {
+            let mut app = App::new(cc);
+            if let Some(path) = path_arg {
+                app.open(path);
+            }
+
+            Ok(Box::new(app))
+        }),
     )
 }
 

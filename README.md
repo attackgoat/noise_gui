@@ -54,6 +54,12 @@ Desktop:
 cargo run
 ```
 
+Desktop (_load a previously saved file_):
+
+```bash
+cargo run -- /path/to/file.ron
+```
+
 Browser:
 
 ```bash
