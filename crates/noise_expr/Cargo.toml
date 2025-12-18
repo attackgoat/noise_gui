@@ -8,8 +8,8 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 noise = {workspace = true}
-ordered-float = "4.2"
+ordered-float = "5.1"
 serde = {workspace = true}
 
 [dev-dependencies]
-ron = "0.8"
+ron = "0.12"
