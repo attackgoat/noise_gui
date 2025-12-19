@@ -3,9 +3,10 @@ use {
         CheckerboardNode, ClampNode, ConstantOpNode, ControlPointNode, CylindersNode, ExponentNode,
         FractalNode, GeneratorNode,
         NodeValue::{Node, Value},
-        NoiseNode, RigidFractalNode, ScaleBiasNode, SelectNode, TransformNode, TurbulenceNode,
-        WorleyNode,
+        NoiseNode, RigidFractalNode, ScaleBiasNode, SelectNode, TerraceNode, TransformNode,
+        TurbulenceNode, WorleyNode,
     },
+    crate::node::{BlendNode, CombinerNode, CurveNode, DisplaceNode, UnaryNode},
     egui::{Align, Color32, ComboBox, DragValue, Layout, Pos2, Stroke, TextEdit, TextWrapMode, Ui},
     egui_snarl::{
         ui::{PinInfo, PinShape, SnarlPin, SnarlViewer},
@@ -278,7 +279,106 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         | NoiseNode::Terrace(_)
                         | NoiseNode::TranslatePoint(_)
                         | NoiseNode::Turbulence(_),
-                    ) => {
+                    )
+                    | (
+                        0 | 1,
+                        NoiseNode::Add(_)
+                        | NoiseNode::Blend(_)
+                        | NoiseNode::F64Operation(_)
+                        | NoiseNode::Min(_)
+                        | NoiseNode::Max(_)
+                        | NoiseNode::Multiply(_)
+                        | NoiseNode::Power(_)
+                        | NoiseNode::Select(_),
+                    )
+                    | (
+                        1,
+                        NoiseNode::Clamp(_)
+                        | NoiseNode::ControlPoint(_)
+                        | NoiseNode::Exponent(_)
+                        | NoiseNode::ScaleBias(_)
+                        | NoiseNode::Worley(_),
+                    )
+                    | (
+                        1,
+                        NoiseNode::Abs(_)
+                        | NoiseNode::Checkerboard(_)
+                        | NoiseNode::Curve(_)
+                        | NoiseNode::Cylinders(_)
+                        | NoiseNode::OpenSimplex(_)
+                        | NoiseNode::Perlin(_)
+                        | NoiseNode::PerlinSurflet(_)
+                        | NoiseNode::Negate(_)
+                        | NoiseNode::Simplex(_)
+                        | NoiseNode::SuperSimplex(_)
+                        | NoiseNode::Terrace(_)
+                        | NoiseNode::Value(_),
+                    )
+                    | (
+                        1..=4,
+                        NoiseNode::Displace(_)
+                        | NoiseNode::RotatePoint(_)
+                        | NoiseNode::ScalePoint(_)
+                        | NoiseNode::TranslatePoint(_),
+                    )
+                    | (
+                        2,
+                        NoiseNode::BasicMulti(_)
+                        | NoiseNode::Billow(_)
+                        | NoiseNode::Blend(_)
+                        | NoiseNode::Clamp(_)
+                        | NoiseNode::Fbm(_)
+                        | NoiseNode::HybridMulti(_)
+                        | NoiseNode::RigidMulti(_)
+                        | NoiseNode::ScaleBias(_)
+                        | NoiseNode::Select(_)
+                        | NoiseNode::Turbulence(_),
+                    )
+                    | (
+                        2,
+                        NoiseNode::Add(_)
+                        | NoiseNode::Exponent(_)
+                        | NoiseNode::Min(_)
+                        | NoiseNode::Max(_)
+                        | NoiseNode::Multiply(_)
+                        | NoiseNode::Power(_)
+                        | NoiseNode::Worley(_),
+                    )
+                    | (
+                        3,
+                        NoiseNode::BasicMulti(_)
+                        | NoiseNode::Billow(_)
+                        | NoiseNode::Fbm(_)
+                        | NoiseNode::HybridMulti(_)
+                        | NoiseNode::RigidMulti(_)
+                        | NoiseNode::Select(_)
+                        | NoiseNode::Turbulence(_),
+                    )
+                    | (3, NoiseNode::Blend(_) | NoiseNode::Clamp(_) | NoiseNode::ScaleBias(_))
+                    | (
+                        4,
+                        NoiseNode::BasicMulti(_)
+                        | NoiseNode::Billow(_)
+                        | NoiseNode::Fbm(_)
+                        | NoiseNode::HybridMulti(_)
+                        | NoiseNode::RigidMulti(_)
+                        | NoiseNode::Select(_),
+                    )
+                    | (5, NoiseNode::RigidMulti(_) | NoiseNode::Select(_))
+                    | (
+                        5,
+                        NoiseNode::BasicMulti(_)
+                        | NoiseNode::Billow(_)
+                        | NoiseNode::Displace(_)
+                        | NoiseNode::Fbm(_)
+                        | NoiseNode::HybridMulti(_)
+                        | NoiseNode::RotatePoint(_)
+                        | NoiseNode::ScalePoint(_)
+                        | NoiseNode::TranslatePoint(_)
+                        | NoiseNode::Turbulence(_),
+                    )
+                    | (6..12, NoiseNode::RigidMulti(_) | NoiseNode::Select(_))
+                    | (_, NoiseNode::Terrace(_)) => {
                         NoiseNode::propagate_f64_from_tuple_op(from.id.node, snarl);
                     }
                     (
@@ -296,36 +396,9 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         | NoiseNode::SuperSimplex(_)
                         | NoiseNode::Value(_)
                         | NoiseNode::Worley(_),
-                    ) => {
-                        NoiseNode::propagate_u32_from_tuple_op(from.id.node, snarl);
-                    }
-                    (
-                        0 | 1,
-                        NoiseNode::Add(_)
-                        | NoiseNode::Blend(_)
-                        | NoiseNode::F64Operation(_)
-                        | NoiseNode::Min(_)
-                        | NoiseNode::Max(_)
-                        | NoiseNode::Multiply(_)
-                        | NoiseNode::Power(_)
-                        | NoiseNode::Select(_),
-                    ) => {
-                        NoiseNode::propagate_f64_from_tuple_op(from.id.node, snarl);
-                    }
-                    (0 | 1, NoiseNode::U32Operation(_)) => {
-                        NoiseNode::propagate_u32_from_tuple_op(from.id.node, snarl);
-                    }
-                    (
-                        1,
-                        NoiseNode::Clamp(_)
-                        | NoiseNode::ControlPoint(_)
-                        | NoiseNode::Exponent(_)
-                        | NoiseNode::ScaleBias(_)
-                        | NoiseNode::Worley(_),
-                    ) => {
-                        NoiseNode::propagate_f64_from_tuple_op(from.id.node, snarl);
-                    }
-                    (
+                    )
+                    | (0 | 1, NoiseNode::U32Operation(_))
+                    | (
                         1,
                         NoiseNode::BasicMulti(_)
                         | NoiseNode::Billow(_)
@@ -333,65 +406,9 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         | NoiseNode::HybridMulti(_)
                         | NoiseNode::RigidMulti(_)
                         | NoiseNode::Turbulence(_),
-                    ) => {
+                    )
+                    | (4, NoiseNode::Turbulence(_)) => {
                         NoiseNode::propagate_u32_from_tuple_op(from.id.node, snarl);
-                    }
-                    (
-                        1..=4,
-                        NoiseNode::Displace(_)
-                        | NoiseNode::RotatePoint(_)
-                        | NoiseNode::ScalePoint(_)
-                        | NoiseNode::TranslatePoint(_),
-                    ) => {
-                        NoiseNode::propagate_f64_from_tuple_op(from.id.node, snarl);
-                    }
-                    (
-                        2,
-                        NoiseNode::BasicMulti(_)
-                        | NoiseNode::Billow(_)
-                        | NoiseNode::Blend(_)
-                        | NoiseNode::Clamp(_)
-                        | NoiseNode::Fbm(_)
-                        | NoiseNode::HybridMulti(_)
-                        | NoiseNode::RigidMulti(_)
-                        | NoiseNode::ScaleBias(_)
-                        | NoiseNode::Select(_)
-                        | NoiseNode::Turbulence(_),
-                    ) => {
-                        NoiseNode::propagate_f64_from_tuple_op(from.id.node, snarl);
-                    }
-                    (
-                        3,
-                        NoiseNode::BasicMulti(_)
-                        | NoiseNode::Billow(_)
-                        | NoiseNode::Fbm(_)
-                        | NoiseNode::HybridMulti(_)
-                        | NoiseNode::RigidMulti(_)
-                        | NoiseNode::Select(_)
-                        | NoiseNode::Turbulence(_),
-                    ) => {
-                        NoiseNode::propagate_f64_from_tuple_op(from.id.node, snarl);
-                    }
-
-                    (
-                        4,
-                        NoiseNode::BasicMulti(_)
-                        | NoiseNode::Billow(_)
-                        | NoiseNode::Fbm(_)
-                        | NoiseNode::HybridMulti(_)
-                        | NoiseNode::RigidMulti(_)
-                        | NoiseNode::Select(_),
-                    ) => {
-                        NoiseNode::propagate_f64_from_tuple_op(from.id.node, snarl);
-                    }
-                    (4, NoiseNode::Turbulence(_)) => {
-                        NoiseNode::propagate_u32_from_tuple_op(from.id.node, snarl);
-                    }
-                    (5, NoiseNode::RigidMulti(_) | NoiseNode::Select(_)) => {
-                        NoiseNode::propagate_f64_from_tuple_op(from.id.node, snarl);
-                    }
-                    (_, NoiseNode::Terrace(_)) => {
-                        NoiseNode::propagate_f64_from_tuple_op(from.id.node, snarl);
                     }
                     _ => (),
                 }
@@ -802,6 +819,132 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             (NoiseNode::F64(_) | NoiseNode::F64Operation(_), 5, NoiseNode::Select(node)) => {
                 node.falloff = Node(from.id.node);
             }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                1..5,
+                NoiseNode::Abs(UnaryNode { image, .. })
+                | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                | NoiseNode::Curve(CurveNode { image, .. })
+                | NoiseNode::Cylinders(CylindersNode { image, .. })
+                | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                | NoiseNode::Perlin(GeneratorNode { image, .. })
+                | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                | NoiseNode::Negate(UnaryNode { image, .. })
+                | NoiseNode::Simplex(GeneratorNode { image, .. })
+                | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                | NoiseNode::Terrace(TerraceNode { image, .. })
+                | NoiseNode::Value(GeneratorNode { image, .. }),
+            ) => {
+                image.coords[to.id.input - 1] = Node(from.id.node);
+            }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                2..6,
+                NoiseNode::Add(CombinerNode { image, .. })
+                | NoiseNode::Exponent(ExponentNode { image, .. })
+                | NoiseNode::Min(CombinerNode { image, .. })
+                | NoiseNode::Max(CombinerNode { image, .. })
+                | NoiseNode::Multiply(CombinerNode { image, .. })
+                | NoiseNode::Power(CombinerNode { image, .. })
+                | NoiseNode::Worley(WorleyNode { image, .. }),
+            ) => {
+                image.coords[to.id.input - 2] = Node(from.id.node);
+            }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                3..7,
+                NoiseNode::Blend(BlendNode { image, .. })
+                | NoiseNode::Clamp(ClampNode { image, .. })
+                | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+            ) => {
+                image.coords[to.id.input - 3] = Node(from.id.node);
+            }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                5..7,
+                NoiseNode::Abs(UnaryNode { image, .. })
+                | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                | NoiseNode::Curve(CurveNode { image, .. })
+                | NoiseNode::Cylinders(CylindersNode { image, .. })
+                | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                | NoiseNode::Perlin(GeneratorNode { image, .. })
+                | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                | NoiseNode::Negate(UnaryNode { image, .. })
+                | NoiseNode::Simplex(GeneratorNode { image, .. })
+                | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                | NoiseNode::Terrace(TerraceNode { image, .. })
+                | NoiseNode::Value(GeneratorNode { image, .. }),
+            ) => {
+                image.value[to.id.input - 5] = Node(from.id.node);
+            }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                5..9,
+                NoiseNode::BasicMulti(FractalNode { image, .. })
+                | NoiseNode::Billow(FractalNode { image, .. })
+                | NoiseNode::Displace(DisplaceNode { image, .. })
+                | NoiseNode::Fbm(FractalNode { image, .. })
+                | NoiseNode::HybridMulti(FractalNode { image, .. })
+                | NoiseNode::RotatePoint(TransformNode { image, .. })
+                | NoiseNode::ScalePoint(TransformNode { image, .. })
+                | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+            ) => {
+                image.coords[to.id.input - 5] = Node(from.id.node);
+            }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                6..8,
+                NoiseNode::Add(CombinerNode { image, .. })
+                | NoiseNode::Exponent(ExponentNode { image, .. })
+                | NoiseNode::Min(CombinerNode { image, .. })
+                | NoiseNode::Max(CombinerNode { image, .. })
+                | NoiseNode::Multiply(CombinerNode { image, .. })
+                | NoiseNode::Power(CombinerNode { image, .. })
+                | NoiseNode::Worley(WorleyNode { image, .. }),
+            ) => {
+                image.value[to.id.input - 6] = Node(from.id.node);
+            }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                6..10,
+                NoiseNode::Select(SelectNode { image, .. })
+                | NoiseNode::RigidMulti(RigidFractalNode { image, .. }),
+            ) => {
+                image.coords[to.id.input - 6] = Node(from.id.node);
+            }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                7..9,
+                NoiseNode::Blend(BlendNode { image, .. })
+                | NoiseNode::Clamp(ClampNode { image, .. })
+                | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+            ) => {
+                image.value[to.id.input - 7] = Node(from.id.node);
+            }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                9..11,
+                NoiseNode::BasicMulti(FractalNode { image, .. })
+                | NoiseNode::Billow(FractalNode { image, .. })
+                | NoiseNode::Displace(DisplaceNode { image, .. })
+                | NoiseNode::Fbm(FractalNode { image, .. })
+                | NoiseNode::HybridMulti(FractalNode { image, .. })
+                | NoiseNode::RotatePoint(TransformNode { image, .. })
+                | NoiseNode::ScalePoint(TransformNode { image, .. })
+                | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+            ) => {
+                image.value[to.id.input - 9] = Node(from.id.node);
+            }
+            (
+                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
+                10..12,
+                NoiseNode::Select(SelectNode { image, .. })
+                | NoiseNode::RigidMulti(RigidFractalNode { image, .. }),
+            ) => {
+                image.value[to.id.input - 10] = Node(from.id.node);
+            }
             (NoiseNode::ControlPoint(_), to_input, NoiseNode::Curve(node)) => {
                 let control_point_idx = to_input - 1;
 
@@ -1052,6 +1195,10 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
     fn inputs(&mut self, node: &NoiseNode) -> usize {
         match node {
             NoiseNode::F64(_) | NoiseNode::U32(_) => 0,
+            NoiseNode::ControlPoint(_)
+            | NoiseNode::F64Operation(_)
+            | NoiseNode::Operation(_)
+            | NoiseNode::U32Operation(_) => 2,
             NoiseNode::Abs(_)
             | NoiseNode::Checkerboard(_)
             | NoiseNode::Cylinders(_)
@@ -1061,19 +1208,15 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             | NoiseNode::Negate(_)
             | NoiseNode::Simplex(_)
             | NoiseNode::SuperSimplex(_)
-            | NoiseNode::Value(_) => 1,
+            | NoiseNode::Value(_) => 7,
             NoiseNode::Add(_)
-            | NoiseNode::ControlPoint(_)
             | NoiseNode::Exponent(_)
-            | NoiseNode::F64Operation(_)
             | NoiseNode::Min(_)
             | NoiseNode::Max(_)
             | NoiseNode::Multiply(_)
-            | NoiseNode::Operation(_)
             | NoiseNode::Power(_)
-            | NoiseNode::U32Operation(_)
-            | NoiseNode::Worley(_) => 2,
-            NoiseNode::Blend(_) | NoiseNode::Clamp(_) | NoiseNode::ScaleBias(_) => 3,
+            | NoiseNode::Worley(_) => 8,
+            NoiseNode::Blend(_) | NoiseNode::Clamp(_) | NoiseNode::ScaleBias(_) => 9,
             NoiseNode::BasicMulti(_)
             | NoiseNode::Billow(_)
             | NoiseNode::Displace(_)
@@ -1082,19 +1225,19 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             | NoiseNode::RotatePoint(_)
             | NoiseNode::ScalePoint(_)
             | NoiseNode::TranslatePoint(_)
-            | NoiseNode::Turbulence(_) => 5,
-            NoiseNode::RigidMulti(_) | NoiseNode::Select(_) => 6,
+            | NoiseNode::Turbulence(_) => 11,
+            NoiseNode::RigidMulti(_) | NoiseNode::Select(_) => 12,
             NoiseNode::Curve(node) => {
                 (node.control_point_node_ids.len()
                     + node.control_point_node_ids.iter().all(Option::is_some) as usize)
                     .max(4)
-                    + 1
+                    + 7
             }
             NoiseNode::Terrace(node) => {
                 (node.control_point_node_ids.len()
                     + node.control_point_node_ids.iter().all(Option::is_some) as usize)
                     .max(2)
-                    + 1
+                    + 7
             }
         }
     }
@@ -1420,6 +1563,31 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
                 }
                 (
+                    1..5,
+                    NoiseNode::Abs(UnaryNode { image, .. })
+                    | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                    | NoiseNode::Curve(CurveNode { image, .. })
+                    | NoiseNode::Cylinders(CylindersNode { image, .. })
+                    | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                    | NoiseNode::Perlin(GeneratorNode { image, .. })
+                    | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                    | NoiseNode::Negate(UnaryNode { image, .. })
+                    | NoiseNode::Simplex(GeneratorNode { image, .. })
+                    | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                    | NoiseNode::Terrace(TerraceNode { image, .. })
+                    | NoiseNode::Value(GeneratorNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.coords[pin.id.input - 1].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[pin.id.input - 1] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
+                }
+                (
                     2,
                     &NoiseNode::BasicMulti(FractalNode {
                         frequency: Node(node_id),
@@ -1502,6 +1670,26 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
                 }
                 (
+                    2..6,
+                    NoiseNode::Add(CombinerNode { image, .. })
+                    | NoiseNode::Exponent(ExponentNode { image, .. })
+                    | NoiseNode::Min(CombinerNode { image, .. })
+                    | NoiseNode::Max(CombinerNode { image, .. })
+                    | NoiseNode::Multiply(CombinerNode { image, .. })
+                    | NoiseNode::Power(CombinerNode { image, .. })
+                    | NoiseNode::Worley(WorleyNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.coords[pin.id.input - 2].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[pin.id.input - 2] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
+                }
+                (
                     3,
                     &NoiseNode::BasicMulti(FractalNode {
                         lacunarity: Node(node_id),
@@ -1568,6 +1756,22 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         .unwrap()
                         .power = Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
                     NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                }
+                (
+                    3..7,
+                    NoiseNode::Blend(BlendNode { image, .. })
+                    | NoiseNode::Clamp(ClampNode { image, .. })
+                    | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.coords[pin.id.input - 3].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[pin.id.input - 3] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
                 }
                 (
                     4,
@@ -1664,6 +1868,141 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         .unwrap()
                         .falloff = Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
                     NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                }
+                (
+                    5..7,
+                    NoiseNode::Abs(UnaryNode { image, .. })
+                    | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                    | NoiseNode::Curve(CurveNode { image, .. })
+                    | NoiseNode::Cylinders(CylindersNode { image, .. })
+                    | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                    | NoiseNode::Perlin(GeneratorNode { image, .. })
+                    | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                    | NoiseNode::Negate(UnaryNode { image, .. })
+                    | NoiseNode::Simplex(GeneratorNode { image, .. })
+                    | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                    | NoiseNode::Terrace(TerraceNode { image, .. })
+                    | NoiseNode::Value(GeneratorNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.value[pin.id.input - 5].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .value[pin.id.input - 5] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
+                }
+                (
+                    5..9,
+                    NoiseNode::BasicMulti(FractalNode { image, .. })
+                    | NoiseNode::Billow(FractalNode { image, .. })
+                    | NoiseNode::Displace(DisplaceNode { image, .. })
+                    | NoiseNode::Fbm(FractalNode { image, .. })
+                    | NoiseNode::HybridMulti(FractalNode { image, .. })
+                    | NoiseNode::RotatePoint(TransformNode { image, .. })
+                    | NoiseNode::ScalePoint(TransformNode { image, .. })
+                    | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                    | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.coords[pin.id.input - 5].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[pin.id.input - 5] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
+                }
+                (
+                    6..8,
+                    NoiseNode::Add(CombinerNode { image, .. })
+                    | NoiseNode::Exponent(ExponentNode { image, .. })
+                    | NoiseNode::Min(CombinerNode { image, .. })
+                    | NoiseNode::Max(CombinerNode { image, .. })
+                    | NoiseNode::Multiply(CombinerNode { image, .. })
+                    | NoiseNode::Power(CombinerNode { image, .. })
+                    | NoiseNode::Worley(WorleyNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.value[pin.id.input - 6].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .value[pin.id.input - 6] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
+                }
+                (
+                    7..9,
+                    NoiseNode::Blend(BlendNode { image, .. })
+                    | NoiseNode::Clamp(ClampNode { image, .. })
+                    | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.value[pin.id.input - 7].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .value[pin.id.input - 7] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
+                }
+                (
+                    6..10,
+                    NoiseNode::RigidMulti(RigidFractalNode { image, .. })
+                    | NoiseNode::Select(SelectNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.coords[pin.id.input - 6].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[pin.id.input - 6] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
+                }
+                (
+                    9..11,
+                    NoiseNode::BasicMulti(FractalNode { image, .. })
+                    | NoiseNode::Billow(FractalNode { image, .. })
+                    | NoiseNode::Displace(DisplaceNode { image, .. })
+                    | NoiseNode::Fbm(FractalNode { image, .. })
+                    | NoiseNode::HybridMulti(FractalNode { image, .. })
+                    | NoiseNode::RotatePoint(TransformNode { image, .. })
+                    | NoiseNode::ScalePoint(TransformNode { image, .. })
+                    | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                    | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.value[pin.id.input - 9].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .value[pin.id.input - 9] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
+                }
+                (
+                    10..12,
+                    NoiseNode::RigidMulti(RigidFractalNode { image, .. })
+                    | NoiseNode::Select(SelectNode { image, .. }),
+                ) => {
+                    if let Some(node_id) = image.value[pin.id.input - 10].as_node_id() {
+                        snarl
+                            .get_node_mut(pin.id.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .value[pin.id.input - 10] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                        NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
+                    }
                 }
                 (control_point_idx, NoiseNode::Curve(node)) if control_point_idx > 0 => {
                     let control_point_idx = control_point_idx - 1;
@@ -2332,6 +2671,408 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             Self::f64_pin_info(true, true)
                         }
                     }
+                    (
+                        1,
+                        NoiseNode::Abs(UnaryNode { image, .. })
+                        | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                        | NoiseNode::Curve(CurveNode { image, .. })
+                        | NoiseNode::Cylinders(CylindersNode { image, .. })
+                        | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Perlin(GeneratorNode { image, .. })
+                        | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                        | NoiseNode::Negate(UnaryNode { image, .. })
+                        | NoiseNode::Simplex(GeneratorNode { image, .. })
+                        | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Terrace(TerraceNode { image, .. })
+                        | NoiseNode::Value(GeneratorNode { image, .. }),
+                    )
+                    | (
+                        2,
+                        NoiseNode::Add(CombinerNode { image, .. })
+                        | NoiseNode::Exponent(ExponentNode { image, .. })
+                        | NoiseNode::Min(CombinerNode { image, .. })
+                        | NoiseNode::Max(CombinerNode { image, .. })
+                        | NoiseNode::Multiply(CombinerNode { image, .. })
+                        | NoiseNode::Power(CombinerNode { image, .. })
+                        | NoiseNode::Worley(WorleyNode { image, .. }),
+                    )
+                    | (
+                        3,
+                        NoiseNode::Blend(BlendNode { image, .. })
+                        | NoiseNode::Clamp(ClampNode { image, .. })
+                        | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+                    )
+                    | (
+                        5,
+                        NoiseNode::BasicMulti(FractalNode { image, .. })
+                        | NoiseNode::Billow(FractalNode { image, .. })
+                        | NoiseNode::Displace(DisplaceNode { image, .. })
+                        | NoiseNode::Fbm(FractalNode { image, .. })
+                        | NoiseNode::HybridMulti(FractalNode { image, .. })
+                        | NoiseNode::RotatePoint(TransformNode { image, .. })
+                        | NoiseNode::ScalePoint(TransformNode { image, .. })
+                        | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                        | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+                    )
+                    | (
+                        6,
+                        NoiseNode::RigidMulti(RigidFractalNode { image, .. })
+                        | NoiseNode::Select(SelectNode { image, .. }),
+                    ) => {
+                        ui.label("Image Left");
+
+                        if let Some(value) = image.coords[0].as_value_mut() {
+                            self.drag_value_f64(ui, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    image.coords[0].as_node_id().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        2,
+                        NoiseNode::Abs(UnaryNode { image, .. })
+                        | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                        | NoiseNode::Curve(CurveNode { image, .. })
+                        | NoiseNode::Cylinders(CylindersNode { image, .. })
+                        | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Perlin(GeneratorNode { image, .. })
+                        | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                        | NoiseNode::Negate(UnaryNode { image, .. })
+                        | NoiseNode::Simplex(GeneratorNode { image, .. })
+                        | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Terrace(TerraceNode { image, .. })
+                        | NoiseNode::Value(GeneratorNode { image, .. }),
+                    )
+                    | (
+                        3,
+                        NoiseNode::Add(CombinerNode { image, .. })
+                        | NoiseNode::Exponent(ExponentNode { image, .. })
+                        | NoiseNode::Min(CombinerNode { image, .. })
+                        | NoiseNode::Max(CombinerNode { image, .. })
+                        | NoiseNode::Multiply(CombinerNode { image, .. })
+                        | NoiseNode::Power(CombinerNode { image, .. })
+                        | NoiseNode::Worley(WorleyNode { image, .. }),
+                    )
+                    | (
+                        4,
+                        NoiseNode::Blend(BlendNode { image, .. })
+                        | NoiseNode::Clamp(ClampNode { image, .. })
+                        | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+                    )
+                    | (
+                        6,
+                        NoiseNode::BasicMulti(FractalNode { image, .. })
+                        | NoiseNode::Billow(FractalNode { image, .. })
+                        | NoiseNode::Displace(DisplaceNode { image, .. })
+                        | NoiseNode::Fbm(FractalNode { image, .. })
+                        | NoiseNode::HybridMulti(FractalNode { image, .. })
+                        | NoiseNode::RotatePoint(TransformNode { image, .. })
+                        | NoiseNode::ScalePoint(TransformNode { image, .. })
+                        | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                        | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+                    )
+                    | (
+                        7,
+                        NoiseNode::RigidMulti(RigidFractalNode { image, .. })
+                        | NoiseNode::Select(SelectNode { image, .. }),
+                    ) => {
+                        ui.label("Image Right");
+
+                        if let Some(value) = image.coords[1].as_value_mut() {
+                            self.drag_value_f64(ui, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    image.coords[1].as_node_id().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        3,
+                        NoiseNode::Abs(UnaryNode { image, .. })
+                        | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                        | NoiseNode::Curve(CurveNode { image, .. })
+                        | NoiseNode::Cylinders(CylindersNode { image, .. })
+                        | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Perlin(GeneratorNode { image, .. })
+                        | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                        | NoiseNode::Negate(UnaryNode { image, .. })
+                        | NoiseNode::Simplex(GeneratorNode { image, .. })
+                        | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Terrace(TerraceNode { image, .. })
+                        | NoiseNode::Value(GeneratorNode { image, .. }),
+                    )
+                    | (
+                        4,
+                        NoiseNode::Add(CombinerNode { image, .. })
+                        | NoiseNode::Exponent(ExponentNode { image, .. })
+                        | NoiseNode::Min(CombinerNode { image, .. })
+                        | NoiseNode::Max(CombinerNode { image, .. })
+                        | NoiseNode::Multiply(CombinerNode { image, .. })
+                        | NoiseNode::Power(CombinerNode { image, .. })
+                        | NoiseNode::Worley(WorleyNode { image, .. }),
+                    )
+                    | (
+                        5,
+                        NoiseNode::Blend(BlendNode { image, .. })
+                        | NoiseNode::Clamp(ClampNode { image, .. })
+                        | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+                    )
+                    | (
+                        7,
+                        NoiseNode::BasicMulti(FractalNode { image, .. })
+                        | NoiseNode::Billow(FractalNode { image, .. })
+                        | NoiseNode::Displace(DisplaceNode { image, .. })
+                        | NoiseNode::Fbm(FractalNode { image, .. })
+                        | NoiseNode::HybridMulti(FractalNode { image, .. })
+                        | NoiseNode::RotatePoint(TransformNode { image, .. })
+                        | NoiseNode::ScalePoint(TransformNode { image, .. })
+                        | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                        | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+                    )
+                    | (
+                        8,
+                        NoiseNode::RigidMulti(RigidFractalNode { image, .. })
+                        | NoiseNode::Select(SelectNode { image, .. }),
+                    ) => {
+                        ui.label("Image Top");
+
+                        if let Some(value) = image.coords[2].as_value_mut() {
+                            self.drag_value_f64(ui, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    image.coords[2].as_node_id().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        4,
+                        NoiseNode::Abs(UnaryNode { image, .. })
+                        | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                        | NoiseNode::Curve(CurveNode { image, .. })
+                        | NoiseNode::Cylinders(CylindersNode { image, .. })
+                        | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Perlin(GeneratorNode { image, .. })
+                        | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                        | NoiseNode::Negate(UnaryNode { image, .. })
+                        | NoiseNode::Simplex(GeneratorNode { image, .. })
+                        | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Terrace(TerraceNode { image, .. })
+                        | NoiseNode::Value(GeneratorNode { image, .. }),
+                    )
+                    | (
+                        5,
+                        NoiseNode::Add(CombinerNode { image, .. })
+                        | NoiseNode::Exponent(ExponentNode { image, .. })
+                        | NoiseNode::Min(CombinerNode { image, .. })
+                        | NoiseNode::Max(CombinerNode { image, .. })
+                        | NoiseNode::Multiply(CombinerNode { image, .. })
+                        | NoiseNode::Power(CombinerNode { image, .. })
+                        | NoiseNode::Worley(WorleyNode { image, .. }),
+                    )
+                    | (
+                        6,
+                        NoiseNode::Blend(BlendNode { image, .. })
+                        | NoiseNode::Clamp(ClampNode { image, .. })
+                        | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+                    )
+                    | (
+                        8,
+                        NoiseNode::BasicMulti(FractalNode { image, .. })
+                        | NoiseNode::Billow(FractalNode { image, .. })
+                        | NoiseNode::Displace(DisplaceNode { image, .. })
+                        | NoiseNode::Fbm(FractalNode { image, .. })
+                        | NoiseNode::HybridMulti(FractalNode { image, .. })
+                        | NoiseNode::RotatePoint(TransformNode { image, .. })
+                        | NoiseNode::ScalePoint(TransformNode { image, .. })
+                        | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                        | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+                    )
+                    | (
+                        9,
+                        NoiseNode::RigidMulti(RigidFractalNode { image, .. })
+                        | NoiseNode::Select(SelectNode { image, .. }),
+                    ) => {
+                        ui.label("Image Bottom");
+
+                        if let Some(value) = image.coords[3].as_value_mut() {
+                            self.drag_value_f64(ui, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    image.coords[3].as_node_id().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        5,
+                        NoiseNode::Abs(UnaryNode { image, .. })
+                        | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                        | NoiseNode::Curve(CurveNode { image, .. })
+                        | NoiseNode::Cylinders(CylindersNode { image, .. })
+                        | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Perlin(GeneratorNode { image, .. })
+                        | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                        | NoiseNode::Negate(UnaryNode { image, .. })
+                        | NoiseNode::Simplex(GeneratorNode { image, .. })
+                        | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Terrace(TerraceNode { image, .. })
+                        | NoiseNode::Value(GeneratorNode { image, .. }),
+                    )
+                    | (
+                        6,
+                        NoiseNode::Add(CombinerNode { image, .. })
+                        | NoiseNode::Exponent(ExponentNode { image, .. })
+                        | NoiseNode::Min(CombinerNode { image, .. })
+                        | NoiseNode::Max(CombinerNode { image, .. })
+                        | NoiseNode::Multiply(CombinerNode { image, .. })
+                        | NoiseNode::Power(CombinerNode { image, .. })
+                        | NoiseNode::Worley(WorleyNode { image, .. }),
+                    )
+                    | (
+                        7,
+                        NoiseNode::Blend(BlendNode { image, .. })
+                        | NoiseNode::Clamp(ClampNode { image, .. })
+                        | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+                    )
+                    | (
+                        9,
+                        NoiseNode::BasicMulti(FractalNode { image, .. })
+                        | NoiseNode::Billow(FractalNode { image, .. })
+                        | NoiseNode::Displace(DisplaceNode { image, .. })
+                        | NoiseNode::Fbm(FractalNode { image, .. })
+                        | NoiseNode::HybridMulti(FractalNode { image, .. })
+                        | NoiseNode::RotatePoint(TransformNode { image, .. })
+                        | NoiseNode::ScalePoint(TransformNode { image, .. })
+                        | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                        | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+                    )
+                    | (
+                        10,
+                        NoiseNode::RigidMulti(RigidFractalNode { image, .. })
+                        | NoiseNode::Select(SelectNode { image, .. }),
+                    ) => {
+                        ui.label("Value Black");
+
+                        if let Some(value) = image.value[0].as_value_mut() {
+                            self.drag_value_f64(ui, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    image.value[0].as_node_id().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
+                    (
+                        6,
+                        NoiseNode::Abs(UnaryNode { image, .. })
+                        | NoiseNode::Checkerboard(CheckerboardNode { image, .. })
+                        | NoiseNode::Curve(CurveNode { image, .. })
+                        | NoiseNode::Cylinders(CylindersNode { image, .. })
+                        | NoiseNode::OpenSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Perlin(GeneratorNode { image, .. })
+                        | NoiseNode::PerlinSurflet(GeneratorNode { image, .. })
+                        | NoiseNode::Negate(UnaryNode { image, .. })
+                        | NoiseNode::Simplex(GeneratorNode { image, .. })
+                        | NoiseNode::SuperSimplex(GeneratorNode { image, .. })
+                        | NoiseNode::Terrace(TerraceNode { image, .. })
+                        | NoiseNode::Value(GeneratorNode { image, .. }),
+                    )
+                    | (
+                        7,
+                        NoiseNode::Add(CombinerNode { image, .. })
+                        | NoiseNode::Exponent(ExponentNode { image, .. })
+                        | NoiseNode::Min(CombinerNode { image, .. })
+                        | NoiseNode::Max(CombinerNode { image, .. })
+                        | NoiseNode::Multiply(CombinerNode { image, .. })
+                        | NoiseNode::Power(CombinerNode { image, .. })
+                        | NoiseNode::Worley(WorleyNode { image, .. }),
+                    )
+                    | (
+                        8,
+                        NoiseNode::Blend(BlendNode { image, .. })
+                        | NoiseNode::Clamp(ClampNode { image, .. })
+                        | NoiseNode::ScaleBias(ScaleBiasNode { image, .. }),
+                    )
+                    | (
+                        10,
+                        NoiseNode::BasicMulti(FractalNode { image, .. })
+                        | NoiseNode::Billow(FractalNode { image, .. })
+                        | NoiseNode::Displace(DisplaceNode { image, .. })
+                        | NoiseNode::Fbm(FractalNode { image, .. })
+                        | NoiseNode::HybridMulti(FractalNode { image, .. })
+                        | NoiseNode::RotatePoint(TransformNode { image, .. })
+                        | NoiseNode::ScalePoint(TransformNode { image, .. })
+                        | NoiseNode::TranslatePoint(TransformNode { image, .. })
+                        | NoiseNode::Turbulence(TurbulenceNode { image, .. }),
+                    )
+                    | (
+                        11,
+                        NoiseNode::RigidMulti(RigidFractalNode { image, .. })
+                        | NoiseNode::Select(SelectNode { image, .. }),
+                    ) => {
+                        ui.label("Value White");
+
+                        if let Some(value) = image.value[1].as_value_mut() {
+                            self.drag_value_f64(ui, value, pin.id.node);
+
+                            Self::f64_pin_info(true, false)
+                        } else {
+                            #[cfg(debug_assertions)]
+                            ui.label(
+                                RichText::new(format!(
+                                    "#{:?}",
+                                    image.value[1].as_node_id().unwrap()
+                                ))
+                                .color(Color32::DEBUG_COLOR),
+                            );
+
+                            Self::f64_pin_info(true, true)
+                        }
+                    }
                     (control_point_idx, NoiseNode::Curve(node)) => {
                         ui.label("Control Point");
 
@@ -2980,6 +3721,80 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .and_then(NoiseNode::as_transform_mut)
                             .unwrap()
                             .axes[remote.input - 1] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                    }
+                    (
+                        1..4,
+                        NoiseNode::Abs(_)
+                        | NoiseNode::Checkerboard(_)
+                        | NoiseNode::Curve(_)
+                        | NoiseNode::Cylinders(_)
+                        | NoiseNode::Negate(_)
+                        | NoiseNode::OpenSimplex(_)
+                        | NoiseNode::Perlin(_)
+                        | NoiseNode::PerlinSurflet(_)
+                        | NoiseNode::Simplex(_)
+                        | NoiseNode::SuperSimplex(_)
+                        | NoiseNode::Value(_)
+                        | NoiseNode::Terrace(_),
+                    ) => {
+                        snarl
+                            .get_node_mut(remote.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[remote.input - 1] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                    }
+                    (
+                        2..6,
+                        NoiseNode::Add(_)
+                        | NoiseNode::Exponent(_)
+                        | NoiseNode::Min(_)
+                        | NoiseNode::Max(_)
+                        | NoiseNode::Multiply(_)
+                        | NoiseNode::Power(_)
+                        | NoiseNode::Worley(_),
+                    ) => {
+                        snarl
+                            .get_node_mut(remote.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[remote.input - 2] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                    }
+                    (3..7, NoiseNode::Blend(_) | NoiseNode::Clamp(_) | NoiseNode::ScaleBias(_)) => {
+                        snarl
+                            .get_node_mut(remote.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[remote.input - 3] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                    }
+                    (
+                        5..9,
+                        NoiseNode::BasicMulti(_)
+                        | NoiseNode::Billow(_)
+                        | NoiseNode::Displace(_)
+                        | NoiseNode::Fbm(_)
+                        | NoiseNode::HybridMulti(_)
+                        | NoiseNode::RotatePoint(_)
+                        | NoiseNode::ScalePoint(_)
+                        | NoiseNode::TranslatePoint(_)
+                        | NoiseNode::Turbulence(_),
+                    ) => {
+                        snarl
+                            .get_node_mut(remote.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[remote.input - 5] =
+                            Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
+                    }
+                    (6..10, NoiseNode::RigidMulti(_) | NoiseNode::Select(_)) => {
+                        snarl
+                            .get_node_mut(remote.node)
+                            .and_then(NoiseNode::as_image_mut)
+                            .unwrap()
+                            .coords[remote.input - 6] =
                             Value(snarl.get_node(node_id).unwrap().eval_f64(snarl));
                     }
                     (

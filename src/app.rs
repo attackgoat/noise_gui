@@ -59,7 +59,7 @@ impl App {
     pub const EXTENSION: &'static str = "ron";
 
     const IMAGE_COUNT: usize = Threads::IMAGE_COORDS as usize * Threads::IMAGE_COORDS as usize;
-    const IMAGE_DIM: usize = Threads::IMAGE_SIZE * Threads::IMAGE_COORDS as usize;
+    const IMAGE_DIM: usize = Threads::SUB_IMAGE_SIZE as usize * Threads::IMAGE_COORDS as usize;
     const IMAGE_SIZE: [usize; 2] = [Self::IMAGE_DIM, Self::IMAGE_DIM];
 
     pub fn new(#[allow(unused_variables)] cc: &CreationContext<'_>) -> Self {
@@ -200,9 +200,14 @@ impl App {
                     continue;
                 }
 
+                let [col, row] = Threads::coord_to_col_row(coord);
+
                 texture.set_partial(
-                    Threads::coord_to_row_col(coord),
-                    ColorImage::from_gray([Threads::IMAGE_SIZE, Threads::IMAGE_SIZE], &image),
+                    [col as _, row as _],
+                    ColorImage::from_gray(
+                        [Threads::SUB_IMAGE_SIZE as _, Threads::SUB_IMAGE_SIZE as _],
+                        &image,
+                    ),
                     Default::default(),
                 );
             }
@@ -293,14 +298,20 @@ impl App {
                 // We request coordinate chunks from the threads using pre-shuffled data so that
                 // all the responses come back in a static-like pattern and not row by row
                 for coord in shuffled_u8(image.version).iter().copied() {
+                    let transform = image.transform;
+                    let value = image.value[0].eval(&self.snarl)..image.value[1].eval(&self.snarl);
+                    let x = image.coords[0].eval(&self.snarl)..image.coords[1].eval(&self.snarl);
+                    let y = image.coords[2].eval(&self.snarl)..image.coords[3].eval(&self.snarl);
+
                     requests.push((
                         node_id,
                         image.version,
                         ImageInfo {
                             coord,
-                            scale: image.scale,
-                            x: image.x,
-                            y: image.y,
+                            transform,
+                            value,
+                            x,
+                            y,
                         },
                     ));
                 }
@@ -313,8 +324,9 @@ impl App {
         for request_idx in 0..Self::IMAGE_COUNT {
             for image_idx in 0..image_count {
                 let (node_id, image_version, image_info) =
-                    requests[image_idx * Self::IMAGE_COUNT + request_idx];
-                self.threads.send(node_id, image_version, image_info);
+                    &requests[image_idx * Self::IMAGE_COUNT + request_idx];
+                self.threads
+                    .send(*node_id, *image_version, image_info.clone());
             }
         }
 

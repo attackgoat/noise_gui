@@ -19,7 +19,7 @@ A graphical user interface for [Noise-rs](https://github.com/Razaekel/noise-rs).
 ## Features:
 
 - [x] Support for all [Noise-rs](https://github.com/Razaekel/noise-rs) `NoiseFn` implementations
-- [ ] Allow zoom/pan on preview images
+- [x] Allow zoom/pan on preview images
 - [x] Allow saving the graph project to a file[^1]
 - [x] Allow noise function export[^1]
 - [ ] Automatic `NoiseFn` cached values

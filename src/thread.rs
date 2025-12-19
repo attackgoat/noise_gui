@@ -1,10 +1,11 @@
 use {
-    super::app::NodeExprs,
+    super::{app::NodeExprs, node::ImagePlane},
     crossbeam_channel::{unbounded, Receiver, Sender},
     egui_snarl::NodeId,
     noise_expr::Expr,
     std::{
         collections::HashMap,
+        ops::Range,
         sync::{Arc, RwLock},
     },
 };
@@ -18,12 +19,13 @@ use std::{
 
 type NodeExprsCache = HashMap<NodeId, (usize, Arc<Expr>)>;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct ImageInfo {
     pub coord: u8,
-    pub scale: f64,
-    pub x: f64,
-    pub y: f64,
+    pub transform: ImagePlane,
+    pub value: Range<f64>,
+    pub x: Range<f64>,
+    pub y: Range<f64>,
 }
 
 pub struct Threads {
@@ -33,7 +35,7 @@ pub struct Threads {
     #[cfg(not(target_arch = "wasm32"))]
     workers: Vec<JoinHandle<()>>,
 
-    rx: Receiver<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
+    rx: Receiver<(NodeId, usize, u8, Box<[u8]>)>,
     tx: Sender<Option<(NodeId, usize, ImageInfo)>>,
 }
 
@@ -45,7 +47,7 @@ impl Threads {
     pub const IMAGE_COORDS: u8 = 16;
 
     /// The number of pixels along any one side of a sub-image.
-    pub const IMAGE_SIZE: usize = 8;
+    pub const SUB_IMAGE_SIZE: u32 = 8;
 
     #[cfg(target_arch = "wasm32")]
     const REQUESTS_PER_FRAME: usize = 64;
@@ -90,11 +92,11 @@ impl Threads {
         }
     }
 
-    pub fn coord_to_row_col(coord: u8) -> [usize; 2] {
-        let row = (coord / Self::IMAGE_COORDS) as usize * Self::IMAGE_SIZE;
-        let col = (coord % Self::IMAGE_COORDS) as usize * Self::IMAGE_SIZE;
+    pub fn coord_to_col_row(coord: u8) -> [u32; 2] {
+        let row = (coord / Self::IMAGE_COORDS) as u32 * Self::SUB_IMAGE_SIZE;
+        let col = (coord % Self::IMAGE_COORDS) as u32 * Self::SUB_IMAGE_SIZE;
 
-        [row, col]
+        [col, row]
     }
 
     fn process_request(
@@ -102,9 +104,15 @@ impl Threads {
         node_id: NodeId,
         version: usize,
         image_info: ImageInfo,
-        tx: &Sender<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
+        tx: &Sender<(NodeId, usize, u8, Box<[u8]>)>,
     ) -> bool {
-        let ImageInfo { coord, scale, x, y } = image_info;
+        let ImageInfo {
+            coord,
+            transform,
+            value,
+            x,
+            y,
+        } = image_info;
 
         // Double-check that the expression is still the current version (it may have been
         // updated by the time we receive this request)
@@ -115,17 +123,33 @@ impl Threads {
             .filter(|(current_version, _)| *current_version == version)
             .map(|(_, expr)| Arc::clone(expr))
         {
-            let [row, col] = Self::coord_to_row_col(coord);
-            let step = 1.0 / (Self::IMAGE_SIZE * 16) as f64;
-            let half_step = step / 2.0;
-            let mut image = [0u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE];
+            const INV_IMAGE_SIZE: f64 =
+                1.0 / (Threads::SUB_IMAGE_SIZE * Threads::IMAGE_COORDS as u32) as f64;
 
-            for image_y in 0..Self::IMAGE_SIZE {
-                let eval_y = ((row + image_y) as f64 * step + half_step + x) * scale;
-                for image_x in 0..Self::IMAGE_SIZE {
-                    let eval_x = ((col + image_x) as f64 * step + half_step + y) * scale;
-                    let sample = (expr.noise().get([eval_x, eval_y, 0.0]) + 1.0) / 2.0;
-                    image[image_x * Self::IMAGE_SIZE + image_y] = (sample * 255.0) as u8;
+            let mut image =
+                vec![0u8; (Self::SUB_IMAGE_SIZE * Self::SUB_IMAGE_SIZE) as _].into_boxed_slice();
+            let [image_col, image_row] = Self::coord_to_col_row(coord);
+
+            let transform_point = match transform {
+                ImagePlane::XY => |x, y| [x, y, 0.0],
+                ImagePlane::XZ => |x, y| [x, 0.0, y],
+                ImagePlane::ZY => |x, y| [0.0, y, x],
+            };
+
+            let noise = expr.noise();
+            let range_value = 1.0 / (value.end - value.start);
+            let range_x = INV_IMAGE_SIZE * (x.end - x.start);
+            let range_y = INV_IMAGE_SIZE * (y.end - y.start);
+
+            for sub_image_y in 0..Self::SUB_IMAGE_SIZE {
+                let eval_y = (image_row + sub_image_y) as f64 * range_y + y.start;
+                for sub_image_x in 0..Self::SUB_IMAGE_SIZE {
+                    const MAX: f64 = u8::MAX as f64;
+                    let eval_x = (image_col + sub_image_x) as f64 * range_x + x.start;
+                    let eval_pt = transform_point(eval_x, eval_y);
+                    let value = (noise.get(eval_pt) - value.start) * range_value;
+                    let idx = Self::sub_image_coord_to_index(sub_image_x, sub_image_y);
+                    image[idx] = (value * MAX).clamp(0.0, MAX) as _;
                 }
             }
 
@@ -141,11 +165,15 @@ impl Threads {
         self.tx.send(Some((node, version, image_info))).unwrap();
     }
 
+    fn sub_image_coord_to_index(x: u32, y: u32) -> usize {
+        (y * Self::SUB_IMAGE_SIZE + x) as _
+    }
+
     #[cfg(not(target_arch = "wasm32"))]
     fn thread_worker(
         node_exprs: NodeExprs,
         rx: Receiver<Option<(NodeId, usize, ImageInfo)>>,
-        tx: Sender<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
+        tx: Sender<(NodeId, usize, u8, Box<[u8]>)>,
     ) {
         // Receive the next versioned node request from the main thread
         while let Some((node_id, version, image_info)) = rx.recv().unwrap() {
@@ -153,10 +181,7 @@ impl Threads {
         }
     }
 
-    pub fn try_recv_iter(
-        &self,
-    ) -> impl Iterator<Item = (NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])> + '_
-    {
+    pub fn try_recv_iter(&self) -> impl Iterator<Item = (NodeId, usize, u8, Box<[u8]>)> + '_ {
         self.rx.try_iter()
     }
 

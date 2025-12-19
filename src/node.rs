@@ -333,28 +333,55 @@ pub struct GeneratorNode {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Image {
-    pub scale: f64,
-
     #[serde(skip)]
     pub texture: Option<TextureHandle>,
+
+    #[serde(default = "ImagePlane::default")]
+    pub transform: ImagePlane,
+
+    #[serde(default = "Image::default_value")]
+    pub value: [NodeValue<f64>; 2],
 
     #[serde(skip)]
     pub version: usize,
 
-    pub x: f64,
-    pub y: f64,
+    #[serde(default = "Image::default_coords")]
+    pub coords: [NodeValue<f64>; 4],
+}
+
+impl Image {
+    fn default_value() -> [NodeValue<f64>; 2] {
+        [NodeValue::Value(-1.0), NodeValue::Value(1.0)]
+    }
+
+    fn default_coords() -> [NodeValue<f64>; 4] {
+        [
+            NodeValue::Value(0.0),
+            NodeValue::Value(4.0),
+            NodeValue::Value(0.0),
+            NodeValue::Value(4.0),
+        ]
+    }
 }
 
 impl Default for Image {
     fn default() -> Self {
         Self {
-            scale: 4.0,
-            texture: None,
-            version: 0,
-            x: 0.0,
-            y: 0.0,
+            coords: Self::default_coords(),
+            texture: Default::default(),
+            transform: Default::default(),
+            value: Self::default_value(),
+            version: Default::default(),
         }
     }
+}
+
+#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+pub enum ImagePlane {
+    #[default]
+    XY,
+    XZ,
+    ZY,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -386,7 +413,7 @@ impl<T> NodeValue<T> {
 }
 
 impl NodeValue<f64> {
-    fn eval(self, snarl: &Snarl<NoiseNode>) -> f64 {
+    pub fn eval(self, snarl: &Snarl<NoiseNode>) -> f64 {
         match self {
             Self::Node(node_id) => snarl.get_node(node_id).unwrap().eval_f64(snarl),
             Self::Value(value) => value,
@@ -613,6 +640,50 @@ impl NoiseNode {
             Some(node)
         } else {
             None
+        }
+    }
+
+    pub fn as_image_mut(&mut self) -> Option<&mut Image> {
+        match self {
+            Self::Abs(UnaryNode { image, .. })
+            | Self::Add(CombinerNode { image, .. })
+            | Self::BasicMulti(FractalNode { image, .. })
+            | Self::Billow(FractalNode { image, .. })
+            | Self::Blend(BlendNode { image, .. })
+            | Self::Clamp(ClampNode { image, .. })
+            | Self::Checkerboard(CheckerboardNode { image, .. })
+            | Self::Curve(CurveNode { image, .. })
+            | Self::Cylinders(CylindersNode { image, .. })
+            | Self::Displace(DisplaceNode { image, .. })
+            | Self::Exponent(ExponentNode { image, .. })
+            | Self::Fbm(FractalNode { image, .. })
+            | Self::HybridMulti(FractalNode { image, .. })
+            | Self::Max(CombinerNode { image, .. })
+            | Self::Min(CombinerNode { image, .. })
+            | Self::Multiply(CombinerNode { image, .. })
+            | Self::Negate(UnaryNode { image, .. })
+            | Self::OpenSimplex(GeneratorNode { image, .. })
+            | Self::Perlin(GeneratorNode { image, .. })
+            | Self::PerlinSurflet(GeneratorNode { image, .. })
+            | Self::Power(CombinerNode { image, .. })
+            | Self::RigidMulti(RigidFractalNode { image, .. })
+            | Self::RotatePoint(TransformNode { image, .. })
+            | Self::ScaleBias(ScaleBiasNode { image, .. })
+            | Self::ScalePoint(TransformNode { image, .. })
+            | Self::Select(SelectNode { image, .. })
+            | Self::Simplex(GeneratorNode { image, .. })
+            | Self::SuperSimplex(GeneratorNode { image, .. })
+            | Self::Terrace(TerraceNode { image, .. })
+            | Self::TranslatePoint(TransformNode { image, .. })
+            | Self::Turbulence(TurbulenceNode { image, .. })
+            | Self::Value(GeneratorNode { image, .. })
+            | Self::Worley(WorleyNode { image, .. }) => Some(image),
+            Self::ControlPoint(_)
+            | Self::F64(_)
+            | Self::F64Operation(_)
+            | Self::Operation(_)
+            | Self::U32(_)
+            | Self::U32Operation(_) => None,
         }
     }
 
