@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "noise_gui"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "crossbeam-channel",

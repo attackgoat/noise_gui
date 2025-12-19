@@ -2,7 +2,7 @@
 
 [![GitHub](https://img.shields.io/badge/github-attackgoat/noise__gui-blue?logo=github)](https://github.com/attackgoat/noise_gui)
 [![crates.io](https://img.shields.io/crates/v/noise_gui)](https://crates.io/crates/noise_gui)
-[![docs.rs](https://img.shields.io/docsrs/noise_gui)](https://docs.rs/noise_gui/latest/noise_gui/)
+[![docs.rs](https://img.shields.io/docsrs/noise_expr)](https://docs.rs/noise_expr/latest/noise_expr/)
 [![GitHub Pages](https://img.shields.io/github/actions/workflow/status/attackgoat/noise_gui/main.yml)](https://github.com/attackgoat/noise_gui/actions/workflows/main.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/attackgoat/noise_gui/blob/master/LICENSE-MIT)
 [![Apache](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/attackgoat/noise_gui/blob/master/LICENSE-APACHE)
