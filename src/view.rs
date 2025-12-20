@@ -945,25 +945,25 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
             ) => {
                 image.value[to.id.input - 10] = Node(from.id.node);
             }
-            (NoiseNode::ControlPoint(_), to_input, NoiseNode::Curve(node)) => {
-                let control_point_idx = to_input - 1;
+            (NoiseNode::ControlPoint(_), _, NoiseNode::Curve(node)) => {
+                let control_point_idx = to.id.input - 7;
 
                 while node.control_point_node_ids.len() <= control_point_idx {
                     node.control_point_node_ids.push(None);
                 }
+
+                debug!("Setting control point index {control_point_idx}");
 
                 node.control_point_node_ids[control_point_idx] = Some(from.id.node);
             }
-            (
-                NoiseNode::F64(_) | NoiseNode::F64Operation(_),
-                to_input,
-                NoiseNode::Terrace(node),
-            ) => {
-                let control_point_idx = to_input - 1;
+            (NoiseNode::F64(_) | NoiseNode::F64Operation(_), _, NoiseNode::Terrace(node)) => {
+                let control_point_idx = to.id.input - 7;
 
                 while node.control_point_node_ids.len() <= control_point_idx {
                     node.control_point_node_ids.push(None);
                 }
+
+                debug!("Setting control point index {control_point_idx}");
 
                 node.control_point_node_ids[control_point_idx] = Some(from.id.node);
             }
@@ -2004,8 +2004,8 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
                     }
                 }
-                (control_point_idx, NoiseNode::Curve(node)) if control_point_idx > 0 => {
-                    let control_point_idx = control_point_idx - 1;
+                (_, NoiseNode::Curve(node)) => {
+                    let control_point_idx = pin.id.input - 7;
 
                     if node
                         .control_point_node_ids
@@ -2021,8 +2021,8 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .control_point_node_ids[control_point_idx] = None;
                     }
                 }
-                (control_point_idx, NoiseNode::Terrace(node)) if control_point_idx > 0 => {
-                    let control_point_idx = control_point_idx - 1;
+                (_, NoiseNode::Terrace(node)) => {
+                    let control_point_idx = pin.id.input - 7;
 
                     if node
                         .control_point_node_ids
@@ -3073,83 +3073,57 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             Self::f64_pin_info(true, true)
                         }
                     }
-                    (control_point_idx, NoiseNode::Curve(node)) => {
+                    (_, NoiseNode::Curve(node)) => {
                         ui.label("Control Point");
 
-                        let control_point_idx = control_point_idx - 1;
+                        let control_point_idx = pin.id.input - 7;
 
                         #[cfg(debug_assertions)]
                         ui.label(
                             RichText::new(format!(
                                 "#{:?}",
-                                node.control_point_node_ids.get(control_point_idx).copied()
+                                node.control_point_node_ids
+                                    .get(control_point_idx)
+                                    .copied()
+                                    .flatten()
                             ))
                             .color(Color32::DEBUG_COLOR),
                         );
 
-                        if node
+                        let filled = node
                             .control_point_node_ids
                             .get(control_point_idx)
                             .copied()
                             .flatten()
-                            .is_none()
-                        {
-                            Self::control_point_pin_info(true, false)
-                        } else {
-                            #[cfg(debug_assertions)]
-                            ui.label(
-                                RichText::new(format!(
-                                    "#{:?}",
-                                    node.control_point_node_ids
-                                        .get(control_point_idx)
-                                        .copied()
-                                        .flatten()
-                                        .unwrap()
-                                ))
-                                .color(Color32::DEBUG_COLOR),
-                            );
+                            .is_some();
 
-                            Self::control_point_pin_info(true, true)
-                        }
+                        Self::control_point_pin_info(true, filled)
                     }
-                    (control_point_idx, NoiseNode::Terrace(node)) => {
+                    (_, NoiseNode::Terrace(node)) => {
                         ui.label("Decimal");
 
-                        let control_point_idx = control_point_idx - 1;
+                        let control_point_idx = pin.id.input - 7;
 
                         #[cfg(debug_assertions)]
                         ui.label(
                             RichText::new(format!(
                                 "#{:?}",
-                                node.control_point_node_ids.get(control_point_idx).copied()
+                                node.control_point_node_ids
+                                    .get(control_point_idx)
+                                    .copied()
+                                    .flatten()
                             ))
                             .color(Color32::DEBUG_COLOR),
                         );
 
-                        if node
+                        let filled = node
                             .control_point_node_ids
                             .get(control_point_idx)
                             .copied()
                             .flatten()
-                            .is_none()
-                        {
-                            Self::f64_pin_info(true, false)
-                        } else {
-                            #[cfg(debug_assertions)]
-                            ui.label(
-                                RichText::new(format!(
-                                    "#{:?}",
-                                    node.control_point_node_ids
-                                        .get(control_point_idx)
-                                        .copied()
-                                        .flatten()
-                                        .unwrap()
-                                ))
-                                .color(Color32::DEBUG_COLOR),
-                            );
+                            .is_some();
 
-                            Self::f64_pin_info(true, true)
-                        }
+                        Self::f64_pin_info(true, filled)
                     }
                     _ => unreachable!(),
                 }
