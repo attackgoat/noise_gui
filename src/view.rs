@@ -2004,7 +2004,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                         NoiseNode::propagate_tuple_from_f64_op(node_id, snarl);
                     }
                 }
-                (_, NoiseNode::Curve(node)) => {
+                (_, NoiseNode::Curve(node)) if pin.id.input >= 7 => {
                     let control_point_idx = pin.id.input - 7;
 
                     if node
@@ -2021,7 +2021,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                             .control_point_node_ids[control_point_idx] = None;
                     }
                 }
-                (_, NoiseNode::Terrace(node)) => {
+                (_, NoiseNode::Terrace(node)) if pin.id.input >= 7 => {
                     let control_point_idx = pin.id.input - 7;
 
                     if node
