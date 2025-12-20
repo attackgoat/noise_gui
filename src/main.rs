@@ -13,7 +13,17 @@ mod view;
 use self::app::App;
 
 #[cfg(not(target_arch = "wasm32"))]
-use std::{env::args, path::PathBuf};
+use {
+    log::warn,
+    ron::ser::{to_string_pretty, PrettyConfig},
+    serde::Serialize,
+    std::{
+        env::args,
+        fs::OpenOptions,
+        io::Write,
+        path::{Path, PathBuf},
+    },
+};
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
@@ -85,4 +95,25 @@ fn main() {
             }
         }
     });
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn write_ron<T>(path: impl AsRef<Path>, value: &T) -> anyhow::Result<()>
+where
+    T: ?Sized + Serialize,
+{
+    OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(path)
+        .inspect_err(|err| {
+            warn!("Unable to create file: {err}");
+        })?
+        .write_all(to_string_pretty(value, PrettyConfig::default())?.as_bytes())
+        .inspect_err(|err| {
+            warn!("Unable to write file: {err}");
+        })?;
+
+    Ok(())
 }

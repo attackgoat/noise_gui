@@ -25,14 +25,11 @@ use {
 
 #[cfg(not(target_arch = "wasm32"))]
 use {
-    egui::{widgets, TopBottomPanel, ViewportCommand},
+    super::write_ron,
+    egui::{widgets, Key, TopBottomPanel, ViewportCommand},
     log::warn,
     rfd::FileDialog,
-    ron::{
-        de::from_reader,
-        ser::{to_string_pretty, PrettyConfig},
-    },
-    serde::Serialize,
+    ron::de::from_reader,
     std::{
         fs::OpenOptions,
         path::{Path, PathBuf},
@@ -139,32 +136,20 @@ impl App {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn save_as<T>(path: impl AsRef<Path>, value: &T) -> anyhow::Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        use std::io::Write;
+    fn save_file(&self, path: impl AsRef<Path>) {
+        write_ron(path, &self.snarl).unwrap_or_default();
+    }
 
-        let mut path = path.as_ref().to_path_buf();
+    #[cfg(not(target_arch = "wasm32"))]
+    fn save_file_as(&mut self) {
+        if let Some(mut path) = Self::file_dialog().save_file() {
+            if path.extension().is_none() {
+                path.set_extension(Self::EXTENSION);
+            }
 
-        if path.extension().is_none() {
-            path.set_extension(Self::EXTENSION);
+            self.save_file(&path);
+            self.path = Some(path);
         }
-
-        OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(path)
-            .inspect_err(|err| {
-                warn!("Unable to create file: {err}");
-            })?
-            .write_all(to_string_pretty(value, PrettyConfig::default())?.as_bytes())
-            .inspect_err(|err| {
-                warn!("Unable to write file: {err}");
-            })?;
-
-        Ok(())
     }
 
     fn update_images(&mut self) {
@@ -369,8 +354,7 @@ impl eframe::App for App {
 
                     if let Some(path) = &self.path {
                         if ui.button("Save").clicked() {
-                            Self::save_as(path, &self.snarl).unwrap_or_default();
-
+                            self.save_file(path);
                             ui.close();
                         }
                     } else {
@@ -381,11 +365,7 @@ impl eframe::App for App {
                     }
 
                     if ui.button("Save As...").clicked() {
-                        if let Some(path) = Self::file_dialog().save_file() {
-                            Self::save_as(&path, &self.snarl).unwrap_or_default();
-                            self.path = Some(path);
-                        }
-
+                        self.save_file_as();
                         ui.close();
                     }
 
@@ -438,5 +418,16 @@ impl eframe::App for App {
             self.remove_nodes();
             self.update_nodes(ctx);
         }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        ctx.input(|input| {
+            if input.modifiers.command && input.key_pressed(Key::S) {
+                if let Some(path) = &self.path {
+                    self.save_file(path);
+                } else {
+                    self.save_file_as();
+                }
+            }
+        });
     }
 }

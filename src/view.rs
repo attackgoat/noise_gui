@@ -1,12 +1,11 @@
 use {
     super::node::{
-        CheckerboardNode, ClampNode, ConstantOpNode, ControlPointNode, CylindersNode, ExponentNode,
-        FractalNode, GeneratorNode,
+        BlendNode, CheckerboardNode, ClampNode, CombinerNode, ConstantOpNode, ControlPointNode,
+        CurveNode, CylindersNode, DisplaceNode, ExponentNode, FractalNode, GeneratorNode,
         NodeValue::{Node, Value},
         NoiseNode, RigidFractalNode, ScaleBiasNode, SelectNode, TerraceNode, TransformNode,
-        TurbulenceNode, WorleyNode,
+        TurbulenceNode, UnaryNode, WorleyNode,
     },
-    crate::node::{BlendNode, CombinerNode, CurveNode, DisplaceNode, UnaryNode},
     egui::{Align, Color32, ComboBox, DragValue, Layout, Pos2, Stroke, TextEdit, TextWrapMode, Ui},
     egui_snarl::{
         ui::{PinInfo, PinShape, SnarlPin, SnarlViewer},
@@ -21,7 +20,7 @@ use {
 use {egui::RichText, egui_snarl::InPinId};
 
 #[cfg(not(target_arch = "wasm32"))]
-use super::app::App;
+use super::{app::App, write_ron};
 
 #[cfg(debug_assertions)]
 fn in_pin_remote_node<T>(snarl: &Snarl<T>, pin_id: InPinId) -> Option<NodeId> {
@@ -3519,7 +3518,7 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                 _ => {
                     if ui.button("Export File...").clicked() {
                         if let Some(path) = App::file_dialog().save_file() {
-                            App::save_as(path, &node.expr(node_id, snarl)).unwrap_or_default();
+                            write_ron(path, &node.expr(node_id, snarl)).unwrap_or_default();
                         }
 
                         ui.close();
