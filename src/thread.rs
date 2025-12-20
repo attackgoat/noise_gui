@@ -194,7 +194,7 @@ impl Threads {
     fn web_worker(
         node_exprs: &NodeExprs,
         rx: &Receiver<Option<(NodeId, usize, ImageInfo)>>,
-        tx: &Sender<(NodeId, usize, u8, [u8; Self::IMAGE_SIZE * Self::IMAGE_SIZE])>,
+        tx: &Sender<(NodeId, usize, u8, Box<[u8]>)>,
     ) {
         // On web we only process a small number of requests, always checking to only count
         // requests which are actually processed (and not stale ones)
