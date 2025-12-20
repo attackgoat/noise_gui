@@ -2043,7 +2043,7 @@ dependencies = [
 
 [[package]]
 name = "noise_expr"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "noise",
  "ordered-float",
@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "noise_gui"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "crossbeam-channel",
