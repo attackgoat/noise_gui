@@ -18,7 +18,7 @@ use {
     ron::ser::{to_string_pretty, PrettyConfig},
     serde::Serialize,
     std::{
-        env::args,
+        env::{args, current_dir},
         fs::OpenOptions,
         io::Write,
         path::{Path, PathBuf},
@@ -98,7 +98,21 @@ fn main() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn write_ron<T>(path: impl AsRef<Path>, value: &T) -> anyhow::Result<()>
+fn parent_dir(path: impl AsRef<Path>) -> PathBuf {
+    let mut res = path
+        .as_ref()
+        .parent()
+        .map(ToOwned::to_owned)
+        .unwrap_or_default();
+    if res.is_relative() {
+        res = current_dir().unwrap().join(res);
+    }
+
+    res
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn write_ron<T>(path: impl AsRef<Path>, value: &T) -> anyhow::Result<()>
 where
     T: ?Sized + Serialize,
 {

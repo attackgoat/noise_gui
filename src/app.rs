@@ -25,7 +25,7 @@ use {
 
 #[cfg(not(target_arch = "wasm32"))]
 use {
-    super::write_ron,
+    super::{parent_dir, write_ron},
     egui::{widgets, Key, TopBottomPanel, ViewportCommand},
     log::warn,
     rfd::FileDialog,
@@ -142,7 +142,16 @@ impl App {
 
     #[cfg(not(target_arch = "wasm32"))]
     fn save_file_as(&mut self) {
-        if let Some(mut path) = Self::file_dialog().save_file() {
+        if let Some(mut path) = Self::file_dialog()
+            .set_directory(self.path.as_ref().map(parent_dir).unwrap_or_default())
+            .set_file_name(
+                self.path
+                    .as_ref()
+                    .and_then(|path| path.file_name().and_then(|file_name| file_name.to_str()))
+                    .unwrap_or("project.ron"),
+            )
+            .save_file()
+        {
             if path.extension().is_none() {
                 path.set_extension(Self::EXTENSION);
             }
@@ -345,7 +354,18 @@ impl eframe::App for App {
                     ui.separator();
 
                     if ui.button("Open File...").clicked() {
-                        if let Some(path) = Self::file_dialog().pick_file() {
+                        if let Some(path) = Self::file_dialog()
+                            .set_directory(self.path.as_ref().map(parent_dir).unwrap_or_default())
+                            .set_file_name(
+                                self.path
+                                    .as_ref()
+                                    .and_then(|path| {
+                                        path.file_name().and_then(|file_name| file_name.to_str())
+                                    })
+                                    .unwrap_or_default(),
+                            )
+                            .pick_file()
+                        {
                             self.open(path);
                         }
 
@@ -384,6 +404,8 @@ impl eframe::App for App {
         CentralPanel::default().show(ctx, |ui| {
             self.snarl.show(
                 &mut Viewer {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    path: self.path.as_ref(),
                     removed_node_ids: &mut self.removed_node_ids,
                     updated_node_ids: &mut self.updated_node_ids,
                 },

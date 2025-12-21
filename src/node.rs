@@ -14,6 +14,9 @@ use {
     std::{cell::RefCell, collections::HashSet},
 };
 
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::PathBuf;
+
 fn constant(value: f64) -> Box<Expr> {
     Box::new(Expr::Constant(Variable::Anonymous(value)))
 }
@@ -67,6 +70,9 @@ where
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct BlendNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 }
 
 impl BlendNode {
@@ -86,6 +92,9 @@ impl BlendNode {
 pub struct CheckerboardNode {
     pub image: Image,
 
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
+
     pub size: NodeValue<u32>,
 }
 
@@ -93,6 +102,10 @@ impl Default for CheckerboardNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: Default::default(),
+
             size: NodeValue::Value(0), // TODO: Checkerboard::DEFAULT_SIZE is private!
         }
     }
@@ -101,6 +114,9 @@ impl Default for CheckerboardNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ClampNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 
     pub lower_bound: NodeValue<f64>,
     pub upper_bound: NodeValue<f64>,
@@ -119,6 +135,9 @@ impl ClampNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct CombinerNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 }
 
 impl CombinerNode {
@@ -198,6 +217,9 @@ pub struct ControlPointNode {
 pub struct CurveNode {
     pub image: Image,
 
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
+
     pub control_point_node_ids: Vec<Option<NodeId>>,
 }
 
@@ -230,6 +252,9 @@ impl CurveNode {
 pub struct CylindersNode {
     pub image: Image,
 
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
+
     pub frequency: NodeValue<f64>,
 }
 
@@ -237,6 +262,10 @@ impl Default for CylindersNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: Default::default(),
+
             frequency: NodeValue::Value(Cylinders::DEFAULT_FREQUENCY),
         }
     }
@@ -245,6 +274,9 @@ impl Default for CylindersNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct DisplaceNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 }
 
 impl DisplaceNode {
@@ -264,6 +296,9 @@ impl DisplaceNode {
 pub struct ExponentNode {
     pub image: Image,
 
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
+
     pub exponent: NodeValue<f64>,
 }
 
@@ -280,6 +315,10 @@ impl Default for ExponentNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: Default::default(),
+
             exponent: NodeValue::Value(1.0),
         }
     }
@@ -288,6 +327,9 @@ impl Default for ExponentNode {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FractalNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 
     pub source_ty: SourceType,
     pub seed: NodeValue<u32>,
@@ -314,6 +356,10 @@ impl Default for FractalNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: Default::default(),
+
             source_ty: Default::default(),
             seed: NodeValue::Value(Fractal::<AnySeedable>::DEFAULT_SEED),
             octaves: NodeValue::Value(Fractal::<AnySeedable>::DEFAULT_OCTAVES as _),
@@ -327,6 +373,9 @@ impl Default for FractalNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct GeneratorNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 
     pub seed: NodeValue<u32>,
 }
@@ -1141,6 +1190,9 @@ impl NoiseNode {
 pub struct RigidFractalNode {
     pub image: Image,
 
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
+
     pub source_ty: SourceType,
     pub seed: NodeValue<u32>,
     pub octaves: NodeValue<u32>,
@@ -1168,6 +1220,10 @@ impl Default for RigidFractalNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: Default::default(),
+
             source_ty: Default::default(),
             seed: NodeValue::Value(RigidFractal::<AnySeedable>::DEFAULT_SEED),
             octaves: NodeValue::Value(RigidFractal::<AnySeedable>::DEFAULT_OCTAVE_COUNT as _),
@@ -1182,6 +1238,9 @@ impl Default for RigidFractalNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ScaleBiasNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 
     pub scale: NodeValue<f64>,
     pub bias: NodeValue<f64>,
@@ -1200,6 +1259,9 @@ impl ScaleBiasNode {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SelectNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 
     pub lower_bound: NodeValue<f64>,
     pub upper_bound: NodeValue<f64>,
@@ -1226,6 +1288,10 @@ impl Default for SelectNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: Default::default(),
+
             lower_bound: NodeValue::Value(0.0),
             upper_bound: NodeValue::Value(1.0),
             falloff: NodeValue::Value(0.0),
@@ -1236,6 +1302,9 @@ impl Default for SelectNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct TerraceNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 
     pub inverted: bool,
     pub control_point_node_ids: Vec<Option<NodeId>>,
@@ -1266,6 +1335,9 @@ impl TerraceNode {
 pub struct TransformNode {
     pub image: Image,
 
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
+
     pub axes: [NodeValue<f64>; 4],
 }
 
@@ -1273,6 +1345,10 @@ impl TransformNode {
     fn new(value: f64) -> Self {
         Self {
             image: Default::default(),
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: Default::default(),
+
             axes: [NodeValue::Value(value); 4],
         }
     }
@@ -1303,6 +1379,9 @@ impl TransformNode {
 pub struct TurbulenceNode {
     pub image: Image,
 
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
+
     pub source_ty: SourceType,
     pub seed: NodeValue<u32>,
     pub frequency: NodeValue<f64>,
@@ -1327,6 +1406,10 @@ impl Default for TurbulenceNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: Default::default(),
+
             source_ty: Default::default(),
             seed: NodeValue::Value(Turbulence::<AnySeedable, AnySeedable>::DEFAULT_SEED),
             frequency: NodeValue::Value(Turbulence::<AnySeedable, AnySeedable>::DEFAULT_FREQUENCY),
@@ -1341,6 +1424,9 @@ impl Default for TurbulenceNode {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct UnaryNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 }
 
 impl UnaryNode {
@@ -1352,6 +1438,9 @@ impl UnaryNode {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WorleyNode {
     pub image: Image,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<PathBuf>,
 
     pub seed: NodeValue<u32>,
     pub frequency: NodeValue<f64>,
@@ -1374,6 +1463,10 @@ impl Default for WorleyNode {
     fn default() -> Self {
         Self {
             image: Default::default(),
+
+            #[cfg(not(target_arch = "wasm32"))]
+            path: Default::default(),
+
             seed: NodeValue::Value(Worley::DEFAULT_SEED),
             frequency: NodeValue::Value(Worley::DEFAULT_FREQUENCY),
             distance_fn: DistanceFunction::Euclidean,

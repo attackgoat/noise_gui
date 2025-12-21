@@ -20,7 +20,14 @@ use {
 use {egui::RichText, egui_snarl::InPinId};
 
 #[cfg(not(target_arch = "wasm32"))]
-use super::{app::App, write_ron};
+use {
+    super::write_ron,
+    rfd::FileDialog,
+    std::{
+        env::current_dir,
+        path::{Path, PathBuf},
+    },
+};
 
 #[cfg(debug_assertions)]
 fn in_pin_remote_node<T>(snarl: &Snarl<T>, pin_id: InPinId) -> Option<NodeId> {
@@ -31,13 +38,40 @@ fn in_pin_remote_node<T>(snarl: &Snarl<T>, pin_id: InPinId) -> Option<NodeId> {
         .map(|remote| remote.node)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+fn relative_path(base_path: impl AsRef<Path>, path: impl AsRef<Path>) -> PathBuf {
+    let base_path = base_path.as_ref();
+    let mut path = path.as_ref();
+    let mut parts = vec![];
+
+    while path != base_path {
+        let Some((parent, file_name)) = path
+            .parent()
+            .and_then(|parent| path.file_name().map(|file_name| (parent, file_name)))
+        else {
+            break;
+        };
+
+        parts.push(file_name.to_str().unwrap_or_default());
+        path = parent;
+    }
+
+    parts.into_iter().rev().collect()
+}
+
 pub struct Viewer<'a> {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub path: Option<&'a PathBuf>,
+
     pub removed_node_ids: &'a mut HashSet<NodeId>,
     pub updated_node_ids: &'a mut HashSet<NodeId>,
 }
 
 impl<'a> Viewer<'a> {
     const AXES: [&'static str; 4] = ["X", "Y", "Z", "W"];
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub const EXTENSION: &'static str = "ron";
 
     fn control_point_pin_info(is_input: bool, filled: bool) -> PinInfo {
         let fill = Color32::from_rgb(132, 80, 24);
@@ -3506,25 +3540,144 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let node = snarl.get_node(node_id).unwrap();
+            let mut base_path = self
+                .path
+                .map(|path| path.parent().map(ToOwned::to_owned).unwrap_or_default());
+            if let Some(base_path) = &mut base_path {
+                if base_path.is_relative() {
+                    *base_path = current_dir().unwrap().join(&*base_path);
+                }
+            }
 
-            match node {
+            let mut export_path = None;
+            match snarl.get_node(node_id).unwrap() {
+                NoiseNode::Abs(UnaryNode { path, .. })
+                | NoiseNode::Add(CombinerNode { path, .. })
+                | NoiseNode::BasicMulti(FractalNode { path, .. })
+                | NoiseNode::Billow(FractalNode { path, .. })
+                | NoiseNode::Blend(BlendNode { path, .. })
+                | NoiseNode::Clamp(ClampNode { path, .. })
+                | NoiseNode::Checkerboard(CheckerboardNode { path, .. })
+                | NoiseNode::Curve(CurveNode { path, .. })
+                | NoiseNode::Cylinders(CylindersNode { path, .. })
+                | NoiseNode::Displace(DisplaceNode { path, .. })
+                | NoiseNode::Exponent(ExponentNode { path, .. })
+                | NoiseNode::Fbm(FractalNode { path, .. })
+                | NoiseNode::HybridMulti(FractalNode { path, .. })
+                | NoiseNode::Max(CombinerNode { path, .. })
+                | NoiseNode::Min(CombinerNode { path, .. })
+                | NoiseNode::Multiply(CombinerNode { path, .. })
+                | NoiseNode::Negate(UnaryNode { path, .. })
+                | NoiseNode::OpenSimplex(GeneratorNode { path, .. })
+                | NoiseNode::Perlin(GeneratorNode { path, .. })
+                | NoiseNode::PerlinSurflet(GeneratorNode { path, .. })
+                | NoiseNode::Power(CombinerNode { path, .. })
+                | NoiseNode::RigidMulti(RigidFractalNode { path, .. })
+                | NoiseNode::RotatePoint(TransformNode { path, .. })
+                | NoiseNode::ScaleBias(ScaleBiasNode { path, .. })
+                | NoiseNode::ScalePoint(TransformNode { path, .. })
+                | NoiseNode::Select(SelectNode { path, .. })
+                | NoiseNode::Simplex(GeneratorNode { path, .. })
+                | NoiseNode::SuperSimplex(GeneratorNode { path, .. })
+                | NoiseNode::Terrace(TerraceNode { path, .. })
+                | NoiseNode::TranslatePoint(TransformNode { path, .. })
+                | NoiseNode::Turbulence(TurbulenceNode { path, .. })
+                | NoiseNode::Value(GeneratorNode { path, .. })
+                | NoiseNode::Worley(WorleyNode { path, .. }) => {
+                    if let Some(base_path) = &base_path {
+                        if let Some(node_path) = path {
+                            if ui.button("Export").clicked() {
+                                export_path = Some(node_path.clone());
+                                ui.close();
+                            }
+                        } else {
+                            ui.label("Export");
+                        }
+
+                        if ui.button("Export As...").clicked() {
+                            export_path = FileDialog::new()
+                                .add_filter("Noise Expression", &[Self::EXTENSION])
+                                .set_directory(base_path)
+                                .set_file_name(
+                                    path.as_ref()
+                                        .and_then(|path| path.file_name())
+                                        .and_then(|file_name| file_name.to_str())
+                                        .unwrap_or("noise_expr.ron"),
+                                )
+                                .save_file();
+
+                            if let Some(export_path) = &mut export_path {
+                                if export_path.extension().is_none() {
+                                    export_path.set_extension(Self::EXTENSION);
+                                }
+                            }
+
+                            ui.close();
+                        }
+                    } else {
+                        ui.label("Export");
+                        ui.label("Export As...");
+                    }
+
+                    ui.separator();
+                }
                 NoiseNode::ControlPoint(_)
                 | NoiseNode::F64(_)
                 | NoiseNode::F64Operation(_)
                 | NoiseNode::Operation(_)
                 | NoiseNode::U32(_)
-                | NoiseNode::U32Operation(_) => (),
-                _ => {
-                    if ui.button("Export File...").clicked() {
-                        if let Some(path) = App::file_dialog().save_file() {
-                            write_ron(path, &node.expr(node_id, snarl)).unwrap_or_default();
-                        }
+                | NoiseNode::U32Operation(_) => {}
+            }
 
-                        ui.close();
+            if let Some(export_path) = export_path {
+                let base_path = base_path.unwrap();
+                let value = snarl.get_node(node_id).unwrap().expr(node_id, snarl);
+                write_ron(&export_path, &value).unwrap_or_default();
+
+                let node_path = relative_path(base_path, export_path);
+
+                match snarl.get_node_mut(node_id).unwrap() {
+                    NoiseNode::Abs(UnaryNode { path, .. })
+                    | NoiseNode::Add(CombinerNode { path, .. })
+                    | NoiseNode::BasicMulti(FractalNode { path, .. })
+                    | NoiseNode::Billow(FractalNode { path, .. })
+                    | NoiseNode::Blend(BlendNode { path, .. })
+                    | NoiseNode::Clamp(ClampNode { path, .. })
+                    | NoiseNode::Checkerboard(CheckerboardNode { path, .. })
+                    | NoiseNode::Curve(CurveNode { path, .. })
+                    | NoiseNode::Cylinders(CylindersNode { path, .. })
+                    | NoiseNode::Displace(DisplaceNode { path, .. })
+                    | NoiseNode::Exponent(ExponentNode { path, .. })
+                    | NoiseNode::Fbm(FractalNode { path, .. })
+                    | NoiseNode::HybridMulti(FractalNode { path, .. })
+                    | NoiseNode::Max(CombinerNode { path, .. })
+                    | NoiseNode::Min(CombinerNode { path, .. })
+                    | NoiseNode::Multiply(CombinerNode { path, .. })
+                    | NoiseNode::Negate(UnaryNode { path, .. })
+                    | NoiseNode::OpenSimplex(GeneratorNode { path, .. })
+                    | NoiseNode::Perlin(GeneratorNode { path, .. })
+                    | NoiseNode::PerlinSurflet(GeneratorNode { path, .. })
+                    | NoiseNode::Power(CombinerNode { path, .. })
+                    | NoiseNode::RigidMulti(RigidFractalNode { path, .. })
+                    | NoiseNode::RotatePoint(TransformNode { path, .. })
+                    | NoiseNode::ScaleBias(ScaleBiasNode { path, .. })
+                    | NoiseNode::ScalePoint(TransformNode { path, .. })
+                    | NoiseNode::Select(SelectNode { path, .. })
+                    | NoiseNode::Simplex(GeneratorNode { path, .. })
+                    | NoiseNode::SuperSimplex(GeneratorNode { path, .. })
+                    | NoiseNode::Terrace(TerraceNode { path, .. })
+                    | NoiseNode::TranslatePoint(TransformNode { path, .. })
+                    | NoiseNode::Turbulence(TurbulenceNode { path, .. })
+                    | NoiseNode::Value(GeneratorNode { path, .. })
+                    | NoiseNode::Worley(WorleyNode { path, .. }) => {
+                        path.replace(node_path);
                     }
-
-                    ui.separator();
+                    NoiseNode::ControlPoint(_)
+                    | NoiseNode::F64(_)
+                    | NoiseNode::F64Operation(_)
+                    | NoiseNode::Operation(_)
+                    | NoiseNode::U32(_)
+                    | NoiseNode::U32Operation(_) => {}
                 }
             }
         }
