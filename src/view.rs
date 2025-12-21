@@ -3587,7 +3587,11 @@ impl<'a> SnarlViewer<NoiseNode> for Viewer<'a> {
                     if let Some(base_path) = &base_path {
                         if let Some(node_path) = path {
                             if ui.button("Export").clicked() {
-                                export_path = Some(node_path.clone());
+                                export_path = Some(if node_path.is_relative() {
+                                    base_path.join(node_path)
+                                } else {
+                                    node_path.clone()
+                                });
                                 ui.close();
                             }
                         } else {
